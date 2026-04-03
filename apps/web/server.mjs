@@ -84,7 +84,21 @@ async function serveStaticFile(res, pathname) {
   }
 
   const extension = extname(filePath);
-  const content = await readFile(filePath);
+  let content;
+
+  try {
+    content = await readFile(filePath);
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+      jsonResponse(res, 404, {
+        ok: false,
+        error: `Route not found: ${pathname}`
+      });
+      return;
+    }
+
+    throw error;
+  }
 
   res.writeHead(200, {
     "Content-Type": mimeTypes[extension] || "application/octet-stream"
@@ -108,6 +122,14 @@ const server = createServer(async (req, res) => {
   }
 
   try {
+    if (url.pathname === "/api/convert" && req.method !== "POST") {
+      jsonResponse(res, 405, {
+        ok: false,
+        error: "Method not allowed. Use POST /api/convert with JSON body and x-api-key header."
+      });
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/health") {
       jsonResponse(res, 200, {
         ok: true,
