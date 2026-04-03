@@ -15,11 +15,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        User::query()->updateOrCreate(
+            [
+                'email' => 'admin@figma2elementor.ctrlaltl.com',
+            ],
+            [
+                'name' => 'Figma2Element Admin',
+                'email_verified_at' => now(),
+                'password' => 'F2E-Q534bLFMagbdR79J',
+            ],
+        );
     }
 }
