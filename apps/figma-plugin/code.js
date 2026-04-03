@@ -543,6 +543,56 @@ function extractSemantics(name, variantProperties) {
   };
 }
 
+function hasExplicitSemanticRole(name) {
+  return Boolean(inferSemanticRole(name));
+}
+
+function nodeHasImageDescendant(node) {
+  if (!node) {
+    return false;
+  }
+
+  if (shouldExportNodeImage(node)) {
+    return true;
+  }
+
+  if (!isSceneNodeWithChildren(node)) {
+    return false;
+  }
+
+  for (let index = 0; index < node.children.length; index += 1) {
+    if (nodeHasImageDescendant(node.children[index])) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function shouldAutoAssignSlideRole(node, parentSemantics) {
+  if (!node || !parentSemantics || parentSemantics.role !== "track") {
+    return false;
+  }
+
+  if (hasExplicitSemanticRole(node.name)) {
+    return false;
+  }
+
+  if (node.type === "TEXT") {
+    return false;
+  }
+
+  const normalizedName = String(node.name || "").toLowerCase();
+  const likelyCardName =
+    normalizedName.includes("logo") ||
+    normalizedName.includes("brand") ||
+    normalizedName.includes("client") ||
+    normalizedName.includes("item") ||
+    normalizedName.includes("card");
+
+  return likelyCardName || nodeHasImageDescendant(node);
+}
+
 function findFirstTextDescendant(node) {
   if (!node) {
     return null;
@@ -773,9 +823,15 @@ function extractComponentMetadata(node, variantProperties) {
   return metadata;
 }
 
-async function serializeNode(node) {
+async function serializeNode(node, parentSemantics = null) {
   const variantProperties = extractVariantProperties(node);
   const semantics = extractSemantics(node.name, variantProperties);
+  const effectiveSemantics = shouldAutoAssignSlideRole(node, parentSemantics)
+    ? {
+        ...semantics,
+        role: "slide"
+      }
+    : semantics;
   const payload = {
     id: node.id,
     name: node.name,
@@ -803,7 +859,7 @@ async function serializeNode(node) {
     characters: node.type === "TEXT" ? node.characters : null,
     style: serializeTextStyle(node),
     variantProperties,
-    semantics,
+    semantics: effectiveSemantics,
     reactions: extractReactions(node),
     component: extractComponentMetadata(node, variantProperties),
     imageUrl: await extractImageUrl(node),
@@ -814,7 +870,7 @@ async function serializeNode(node) {
     payload.children = await Promise.all(
       node.children
         .filter((child) => child.visible !== false)
-        .map((child) => serializeNode(child))
+        .map((child) => serializeNode(child, effectiveSemantics))
     );
   }
 

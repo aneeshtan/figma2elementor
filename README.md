@@ -141,6 +141,7 @@ For higher-fidelity exports, the plugin and converter now understand a small nam
 - `[slider]` or `[carousel]` on the root slider frame
 - `[track]` on the slide track wrapper
 - `[slide]` or `[card]` on each repeated slide card
+- direct non-text children inside a `[track]` wrapper are auto-treated as slides when they look like image/logo cards
 - `[dots]` on pagination wrapper and `[dot]` on each pagination item
 - `[button]` on CTA groups or components
 - `[media]` on image/media regions and `[content]` on text/content regions
