@@ -1,0 +1,11 @@
+{
+  "name": "figma2element",
+  "version": "0.1.0",
+  "description": "Open-source Figma to Elementor conversion platform with a local dashboard, plugin shell, and Elementor JSON export pipeline.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "node apps/web/server.mjs",
+    "sample:convert": "node scripts/run-sample.mjs"
+  }
+}

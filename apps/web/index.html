@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Figma2Element</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="noise"></div>
+    <header class="shell">
+      <nav class="nav">
+        <div class="brand">
+          <span class="brand-mark">F2E</span>
+          <span>Figma2Element</span>
+        </div>
+        <div class="nav-links">
+          <a href="#product">Product</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#dashboard">Dashboard</a>
+          <a href="#plugin">Plugin</a>
+          <a href="#playground">Playground</a>
+        </div>
+      </nav>
+
+      <section class="hero reveal">
+        <div class="hero-copy">
+          <p class="eyebrow">Figma to Elementor platform</p>
+          <h1>Turn Figma frames into importable Elementor templates.</h1>
+          <p class="hero-text">
+            This MVP ships the product spine: landing experience, local conversion API, Figma plugin shell,
+            and a first-pass mapper that generates Elementor JSON from a simplified Figma tree.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#dashboard">Open local dashboard</a>
+            <a class="button secondary" href="#plugin">Install the plugin</a>
+          </div>
+          <ul class="hero-stats">
+            <li><strong>API keys</strong><span>Authenticate plugin and playground conversions</span></li>
+            <li><strong>Saved jobs</strong><span>Persist exports with download links and usage tracking</span></li>
+            <li><strong>Elementor output</strong><span>Container-first JSON structure with job history</span></li>
+          </ul>
+        </div>
+
+        <div class="hero-panel reveal delay-1">
+          <div class="panel-card">
+            <p class="panel-label">Pipeline</p>
+            <ol>
+              <li>Create or copy an API key</li>
+              <li>Install the Figma plugin</li>
+              <li>Select a Figma frame</li>
+              <li>Convert and import into WordPress</li>
+            </ol>
+          </div>
+          <div class="panel-card output-preview">
+            <p class="panel-label">Supported mappings</p>
+            <pre>{
+  "FRAME": "container",
+  "TEXT": "heading/text",
+  "RECTANGLE": "box/button",
+  "IMAGE": "image"
+}</pre>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <main class="shell">
+      <section id="product" class="grid-section reveal">
+        <div class="section-heading">
+          <p class="eyebrow">What you need to build</p>
+          <h2>Platform pieces, not just a plugin.</h2>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <h3>Figma plugin</h3>
+            <p>Read the selected node tree, normalize it, and send it to your backend for conversion.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Conversion engine</h3>
+            <p>Map layout, typography, colors, and assets into valid Elementor containers and widgets.</p>
+          </article>
+          <article class="feature-card">
+            <h3>App backend</h3>
+            <p>Handle API keys, quotas, job persistence, pricing plans, asset storage, and export history.</p>
+          </article>
+          <article class="feature-card">
+            <h3>WordPress delivery</h3>
+            <p>Import JSON today, then add a WordPress plugin later for one-click publishing and media sync.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="pricing" class="grid-section reveal">
+        <div class="section-heading">
+          <p class="eyebrow">Pricing</p>
+          <h2>Simple plans for a plugin-led workflow.</h2>
+        </div>
+        <div id="pricing-grid" class="feature-grid pricing-grid"></div>
+      </section>
+
+      <section id="dashboard" class="dashboard-section reveal">
+        <div class="section-heading">
+          <p class="eyebrow">Dashboard</p>
+          <h2>Run the local SaaS MVP with plan limits, keys, and job history.</h2>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="feature-card dashboard-card">
+            <p class="panel-label">Workspace</p>
+            <div id="account-summary" class="stacked-copy"></div>
+          </article>
+
+          <article class="feature-card dashboard-card">
+            <p class="panel-label">Usage</p>
+            <div id="usage-summary" class="stacked-copy"></div>
+            <div class="usage-meter">
+              <div id="usage-fill" class="usage-fill"></div>
+            </div>
+          </article>
+
+          <article class="feature-card dashboard-card">
+            <p class="panel-label">API Keys</p>
+            <div class="stack-tight">
+              <label class="field">
+                <span>Active API key</span>
+                <select id="api-key-select"></select>
+              </label>
+              <label class="field">
+                <span>Create new key</span>
+                <input id="new-key-name" type="text" value="Plugin Key" />
+              </label>
+              <button id="create-key" class="button secondary" type="button">Generate key</button>
+              <div id="api-key-value" class="code-block"></div>
+            </div>
+          </article>
+
+          <article class="feature-card dashboard-card">
+            <p class="panel-label">Plugin config</p>
+            <div class="stack-tight">
+              <div id="plugin-endpoint" class="code-block"></div>
+              <div id="plugin-snippet" class="code-block"></div>
+            </div>
+          </article>
+        </div>
+
+        <article class="feature-card jobs-card">
+          <div class="jobs-head">
+            <div>
+              <p class="panel-label">Recent jobs</p>
+              <h3>Saved conversions</h3>
+            </div>
+            <button id="refresh-jobs" class="button ghost" type="button">Refresh jobs</button>
+          </div>
+          <div id="jobs-empty" class="empty-state">No conversions yet. Generate one from the playground or the plugin.</div>
+          <div class="jobs-table-wrap">
+            <table class="jobs-table">
+              <thead>
+                <tr>
+                  <th>Frame</th>
+                  <th>Created</th>
+                  <th>Nodes</th>
+                  <th>Warnings</th>
+                  <th>Origin</th>
+                  <th>Download</th>
+                </tr>
+              </thead>
+              <tbody id="jobs-body"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="plugin" class="plugin-section reveal">
+        <div class="section-heading">
+          <p class="eyebrow">Plugin install</p>
+          <h2>Use the included Figma plugin shell.</h2>
+        </div>
+        <div class="two-up">
+          <div class="feature-card">
+            <h3>Install in Figma</h3>
+            <p>Figma Desktop → Plugins → Development → Import plugin from manifest.</p>
+            <p><code>/Users/farshad.ghanzanfari/Documents/www/Figma2Element/apps/figma-plugin/manifest.json</code></p>
+          </div>
+          <div class="feature-card">
+            <h3>Expected flow</h3>
+            <p>Open the plugin, paste the dashboard API key, inspect the current selection, convert it through the local API, and download the template JSON.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="playground" class="playground reveal">
+        <div class="section-heading">
+          <p class="eyebrow">Playground</p>
+          <h2>Test the converter without opening Figma.</h2>
+        </div>
+
+        <div class="playground-credentials">
+          <label class="field">
+            <span>Conversion endpoint</span>
+            <input id="playground-endpoint" type="text" />
+          </label>
+          <label class="field">
+            <span>API key</span>
+            <input id="playground-api-key" type="text" />
+          </label>
+        </div>
+
+        <div class="playground-actions">
+          <button id="load-example" class="button secondary" type="button">Load example payload</button>
+          <button id="run-convert" class="button primary" type="button">Generate Elementor JSON</button>
+          <button id="download-json" class="button ghost" type="button" disabled>Download output</button>
+        </div>
+
+        <div class="playground-grid">
+          <label class="playground-panel">
+            <span>Figma payload</span>
+            <textarea id="input-json" spellcheck="false"></textarea>
+          </label>
+
+          <label class="playground-panel">
+            <span>Elementor output</span>
+            <textarea id="output-json" spellcheck="false" readonly></textarea>
+          </label>
+        </div>
+
+        <div id="report" class="report"></div>
+      </section>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,9 @@
+node_modules
+.DS_Store
+dist
+coverage
+*.log
+data/platform.json
+data/platform.local.json
+data/exports/*.json
+!data/exports/.gitkeep

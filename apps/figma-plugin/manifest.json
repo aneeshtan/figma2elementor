@@ -1,0 +1,9 @@
+{
+  "name": "Figma2Element Converter",
+  "id": "figma2element.converter",
+  "api": "1.0.0",
+  "editorType": ["figma"],
+  "main": "code.js",
+  "ui": "ui.html"
+}
+
