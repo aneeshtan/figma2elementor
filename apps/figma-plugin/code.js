@@ -30,6 +30,32 @@ function rgbaObjectToHex(color) {
   return `#${channelToHex(color.r)}${channelToHex(color.g)}${channelToHex(color.b)}${alpha}`;
 }
 
+function extractGradientStops(paint) {
+  if (!paint || !Array.isArray(paint.gradientStops)) {
+    return [];
+  }
+
+  return paint.gradientStops
+    .map((stop) => ({
+      position: typeof stop.position === "number" ? stop.position : 0,
+      color: rgbaObjectToHex(stop.color)
+    }))
+    .filter((stop) => stop.color);
+}
+
+function extractGradientHandles(paint) {
+  if (!paint || !Array.isArray(paint.gradientHandlePositions)) {
+    return [];
+  }
+
+  return paint.gradientHandlePositions
+    .map((point) => ({
+      x: typeof point.x === "number" ? point.x : 0,
+      y: typeof point.y === "number" ? point.y : 0
+    }))
+    .slice(0, 3);
+}
+
 function extractPaints(node) {
   if (!("fills" in node) || !Array.isArray(node.fills)) {
     return [];
@@ -39,7 +65,10 @@ function extractPaints(node) {
     .filter((paint) => paint.visible !== false)
     .map((paint) => ({
       type: paint.type,
-      color: paint.type === "SOLID" ? rgbaToHex(paint) : null
+      color: paint.type === "SOLID" ? rgbaToHex(paint) : null,
+      opacity: typeof paint.opacity === "number" ? paint.opacity : 1,
+      gradientStops: extractGradientStops(paint),
+      gradientHandlePositions: extractGradientHandles(paint)
     }))
     .filter(Boolean);
 }
@@ -127,13 +156,19 @@ function serializeTextStyle(node) {
 
   const lineHeight = node.lineHeight;
   const lineHeightPx = lineHeight && lineHeight.unit === "PIXELS" ? lineHeight.value : null;
+  const letterSpacing = node.letterSpacing;
+  const letterSpacingPx = letterSpacing && letterSpacing.unit === "PIXELS" ? letterSpacing.value : null;
 
   return {
     fontFamily: node.fontName && node.fontName !== figma.mixed ? node.fontName.family : null,
     fontWeight: node.fontName && node.fontName !== figma.mixed ? node.fontName.style : null,
     fontSize: typeof node.fontSize === "number" ? node.fontSize : null,
     lineHeightPx,
-    textAlignHorizontal: node.textAlignHorizontal || "LEFT"
+    letterSpacingPx,
+    paragraphSpacing: typeof node.paragraphSpacing === "number" ? node.paragraphSpacing : null,
+    textAlignHorizontal: node.textAlignHorizontal || "LEFT",
+    textCase: typeof node.textCase === "string" ? node.textCase : null,
+    textDecoration: typeof node.textDecoration === "string" ? node.textDecoration : null
   };
 }
 
@@ -638,6 +673,10 @@ async function serializeNode(node) {
     paddingBottom: "paddingBottom" in node ? node.paddingBottom : 0,
     paddingLeft: "paddingLeft" in node ? node.paddingLeft : 0,
     cornerRadius: "cornerRadius" in node && typeof node.cornerRadius === "number" ? node.cornerRadius : 0,
+    topLeftRadius: "topLeftRadius" in node && typeof node.topLeftRadius === "number" ? node.topLeftRadius : null,
+    topRightRadius: "topRightRadius" in node && typeof node.topRightRadius === "number" ? node.topRightRadius : null,
+    bottomRightRadius: "bottomRightRadius" in node && typeof node.bottomRightRadius === "number" ? node.bottomRightRadius : null,
+    bottomLeftRadius: "bottomLeftRadius" in node && typeof node.bottomLeftRadius === "number" ? node.bottomLeftRadius : null,
     clipsContent: "clipsContent" in node ? Boolean(node.clipsContent) : false,
     absoluteBoundingBox: extractBounds(node),
     fills: extractPaints(node),

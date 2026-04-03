@@ -49,6 +49,16 @@ function firstSolidFill(node) {
   return (node.fills || []).find((fill) => fill && fill.type === "SOLID" && fill.color);
 }
 
+function firstBackgroundFill(node) {
+  if (!node) {
+    return null;
+  }
+
+  return (node.fills || []).find(
+    (fill) => fill && (fill.type === "SOLID" && fill.color || Array.isArray(fill.gradientStops) && fill.gradientStops.length >= 2)
+  );
+}
+
 function firstStroke(node) {
   if (!node) {
     return null;
@@ -411,6 +421,97 @@ function normalizeColor(value) {
   }
 
   return trimmed;
+}
+
+function gradientAngleFromHandles(fill) {
+  const handles = Array.isArray(fill?.gradientHandlePositions) ? fill.gradientHandlePositions : [];
+  if (handles.length < 2) {
+    return 180;
+  }
+
+  const dx = Number(handles[1].x || 0) - Number(handles[0].x || 0);
+  const dy = Number(handles[1].y || 0) - Number(handles[0].y || 0);
+  const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+  return Math.round((angle + 90 + 360) % 360);
+}
+
+function paintToCss(fill) {
+  if (!fill) {
+    return undefined;
+  }
+
+  if (fill.type === "SOLID" && fill.color) {
+    return normalizeColor(fill.color);
+  }
+
+  if (Array.isArray(fill.gradientStops) && fill.gradientStops.length >= 2) {
+    const stops = fill.gradientStops
+      .filter((stop) => stop && stop.color)
+      .map((stop) => `${normalizeColor(stop.color)} ${Math.round((stop.position || 0) * 100)}%`)
+      .join(", ");
+
+    if (!stops) {
+      return undefined;
+    }
+
+    if (String(fill.type || "").includes("RADIAL")) {
+      return `radial-gradient(circle, ${stops})`;
+    }
+
+    return `linear-gradient(${gradientAngleFromHandles(fill)}deg, ${stops})`;
+  }
+
+  return undefined;
+}
+
+function getCornerRadiusValues(node) {
+  const values = [node?.topLeftRadius, node?.topRightRadius, node?.bottomRightRadius, node?.bottomLeftRadius];
+  if (values.every((value) => typeof value === "number")) {
+    return values;
+  }
+
+  if (typeof node?.cornerRadius === "number" && node.cornerRadius > 0) {
+    return [node.cornerRadius, node.cornerRadius, node.cornerRadius, node.cornerRadius];
+  }
+
+  return null;
+}
+
+function normalizeFontWeightValue(value) {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) {
+    return undefined;
+  }
+
+  if (/\bthin\b/.test(normalized)) return 100;
+  if (/\bextra light\b|\bultra light\b/.test(normalized)) return 200;
+  if (/\blight\b/.test(normalized)) return 300;
+  if (/\bregular\b|\bbook\b|\bnormal\b/.test(normalized)) return 400;
+  if (/\bmedium\b/.test(normalized)) return 500;
+  if (/\bsemi bold\b|\bsemibold\b|\bdemi bold\b/.test(normalized)) return 600;
+  if (/\bextra bold\b|\bultra bold\b/.test(normalized)) return 800;
+  if (/\bblack\b|\bheavy\b/.test(normalized)) return 900;
+  if (/\bbold\b/.test(normalized)) return 700;
+  return undefined;
+}
+
+function mapTextTransform(value) {
+  const normalized = String(value || "").trim().toUpperCase();
+  if (normalized === "UPPER" || normalized === "UPPERCASE") return "uppercase";
+  if (normalized === "LOWER" || normalized === "LOWERCASE") return "lowercase";
+  if (normalized === "TITLE" || normalized === "TITLECASE") return "capitalize";
+  return undefined;
+}
+
+function mapTextDecoration(value) {
+  const normalized = String(value || "").trim().toUpperCase();
+  if (normalized === "UNDERLINE") return "underline";
+  if (normalized === "STRIKETHROUGH") return "line-through";
+  return undefined;
 }
 
 function getColorChannels(value) {
@@ -2086,7 +2187,27 @@ function applyTypography(settings, node) {
   }
 
   if (node.style.fontWeight) {
-    settings.typography_font_weight = node.style.fontWeight;
+    const fontWeight = normalizeFontWeightValue(node.style.fontWeight);
+    if (fontWeight) {
+      settings.typography_font_weight = fontWeight;
+    }
+    if (String(node.style.fontWeight).toLowerCase().includes("italic")) {
+      settings.typography_font_style = "italic";
+    }
+  }
+
+  if (typeof node.style.letterSpacingPx === "number") {
+    settings.typography_letter_spacing = px(node.style.letterSpacingPx);
+  }
+
+  const textTransform = mapTextTransform(node.style.textCase);
+  if (textTransform) {
+    settings.typography_text_transform = textTransform;
+  }
+
+  const textDecoration = mapTextDecoration(node.style.textDecoration);
+  if (textDecoration) {
+    settings.typography_text_decoration = textDecoration;
   }
 }
 
@@ -2120,19 +2241,33 @@ function applyShadow(settings, node) {
 }
 
 function applyBorderRadius(settings, node) {
-  if (node.cornerRadius) {
-    settings.border_radius = box(node.cornerRadius, node.cornerRadius, node.cornerRadius, node.cornerRadius);
+  const radii = getCornerRadiusValues(node);
+  if (radii) {
+    settings.border_radius = box(radii[0], radii[1], radii[2], radii[3]);
   }
 }
 
 function applyContainerSurface(settings, node) {
-  const fill = firstSolidFill(node);
+  const fill = firstBackgroundFill(node);
 
-  if (fill?.color) {
-    settings.background_background = "classic";
-    settings.background_color = normalizeColor(fill.color);
-    settings.background_hover_background = "classic";
-    settings.background_hover_color = shiftColor(fill.color, -0.08);
+  if (fill) {
+    if (fill.type === "SOLID" && fill.color) {
+      settings.background_background = "classic";
+      settings.background_color = normalizeColor(fill.color);
+      settings.background_hover_background = "classic";
+      settings.background_hover_color = shiftColor(fill.color, -0.08);
+    } else if (Array.isArray(fill.gradientStops) && fill.gradientStops.length >= 2) {
+      const firstStop = fill.gradientStops[0];
+      const lastStop = fill.gradientStops[fill.gradientStops.length - 1];
+      settings.background_background = "gradient";
+      settings.background_color = normalizeColor(firstStop?.color);
+      settings.background_color_b = normalizeColor(lastStop?.color);
+      settings.background_gradient_type = String(fill.type || "").includes("RADIAL") ? "radial" : "linear";
+      settings.background_gradient_angle = gradientAngleFromHandles(fill);
+      settings.background_hover_background = "gradient";
+      settings.background_hover_color = shiftColor(firstStop?.color || "#111827", -0.05);
+      settings.background_hover_color_b = shiftColor(lastStop?.color || "#1f2937", -0.05);
+    }
   }
 
   if (node.imageUrl) {
@@ -2390,6 +2525,10 @@ function mapImageNode(node, helpers) {
     settings.image_width = px(node.absoluteBoundingBox.width);
   }
 
+  applyBorder(settings, node);
+  applyBorderRadius(settings, node);
+  applyShadow(settings, node);
+
   return {
     id: helpers.nextId(node.name),
     elType: "widget",
@@ -2402,14 +2541,19 @@ function mapImageNode(node, helpers) {
 
 function mapButtonNode(node, helpers) {
   const textChild = node.children.find((child) => child.type === "TEXT");
-  const fill = firstSolidFill(node);
+  const fill = firstBackgroundFill(node);
   const textFill = textChild ? firstSolidFill(textChild) : null;
+  const solidColor = fill?.type === "SOLID" ? fill.color : fill?.gradientStops?.[0]?.color;
+  const hoverColor =
+    fill?.type === "SOLID"
+      ? shiftColor(fill.color || "#00695c", -0.12)
+      : shiftColor(fill?.gradientStops?.[fill.gradientStops.length - 1]?.color || solidColor || "#00695c", -0.12);
   const settings = {
     _title: node.name || "Button",
     text: textChild?.characters || node.name || "Click here",
-    background_color: normalizeColor(fill?.color) || "#00695c",
+    background_color: normalizeColor(solidColor) || "#00695c",
     button_text_color: normalizeColor(textFill?.color) || "#ffffff",
-    background_hover_color: shiftColor(fill?.color || "#00695c", -0.12),
+    background_hover_color: hoverColor,
     button_hover_color: normalizeColor(textFill?.color) || "#ffffff",
     hover_animation: "grow",
     padding: box(node.paddingTop, node.paddingRight, node.paddingBottom, node.paddingLeft)
