@@ -7,12 +7,15 @@
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <div class="noise"></div>
+    <div class="page-accent"></div>
     <header class="shell">
       <nav class="nav">
         <div class="brand">
           <span class="brand-mark">F2E</span>
-          <span>Figma2Element</span>
+          <div class="brand-copy">
+            <span>Figma2Element</span>
+            <small>Figma to Elementor</small>
+          </div>
         </div>
         <div class="nav-links">
           <a href="#product">Product</a>
@@ -25,35 +28,52 @@
 
       <section class="hero reveal">
         <div class="hero-copy">
-          <p class="eyebrow">Figma to Elementor platform</p>
-          <h1>Turn Figma frames into importable Elementor templates.</h1>
+          <p class="eyebrow">Minimal workflow. Figma-red interface.</p>
+          <h1>Convert Figma designs into Elementor templates with a cleaner platform surface.</h1>
           <p class="hero-text">
-            This MVP ships the product spine: landing experience, local conversion API, Figma plugin shell,
-            and a first-pass mapper that generates Elementor JSON from a simplified Figma tree.
+            The product spine is here already: plugin shell, authenticated conversion API, saved jobs, usage
+            tracking, and Elementor JSON export. This redesign strips the visual noise and makes the app feel
+            closer to a modern design tool.
           </p>
+          <div class="hero-inline-meta">
+            <span>Plugin-first</span>
+            <span>Saved exports</span>
+            <span>Figma-red system</span>
+          </div>
           <div class="hero-actions">
             <a class="button primary" href="#dashboard">Open local dashboard</a>
-            <a class="button secondary" href="#plugin">Install the plugin</a>
+            <a class="button secondary" href="#playground">Test a conversion</a>
           </div>
           <ul class="hero-stats">
-            <li><strong>API keys</strong><span>Authenticate plugin and playground conversions</span></li>
-            <li><strong>Saved jobs</strong><span>Persist exports with download links and usage tracking</span></li>
-            <li><strong>Elementor output</strong><span>Container-first JSON structure with job history</span></li>
+            <li><strong>API keys</strong><span>Use the same token in the dashboard, plugin, and local playground.</span></li>
+            <li><strong>Saved jobs</strong><span>Every export becomes a reusable job with a direct download path.</span></li>
+            <li><strong>Elementor JSON</strong><span>Container-first output designed for immediate import and iteration.</span></li>
           </ul>
         </div>
 
         <div class="hero-panel reveal delay-1">
-          <div class="panel-card">
-            <p class="panel-label">Pipeline</p>
-            <ol>
-              <li>Create or copy an API key</li>
-              <li>Install the Figma plugin</li>
-              <li>Select a Figma frame</li>
-              <li>Convert and import into WordPress</li>
-            </ol>
+          <div class="hero-stack">
+            <div class="panel-card panel-emphasis">
+              <p class="panel-label">Launch flow</p>
+              <div class="metric-value">4 steps</div>
+              <ol>
+                <li>Copy an API key</li>
+                <li>Install the Figma plugin</li>
+                <li>Convert the selected frame</li>
+                <li>Import the template into Elementor</li>
+              </ol>
+            </div>
+            <div class="panel-card">
+              <p class="panel-label">System status</p>
+              <div class="status-list">
+                <div><span class="status-dot"></span><strong>Platform</strong><small>Dashboard, keys, plans, jobs</small></div>
+                <div><span class="status-dot"></span><strong>Converter</strong><small>Auto-layout, text, button, image mapping</small></div>
+                <div><span class="status-dot"></span><strong>Plugin</strong><small>Selection serialization and export trigger</small></div>
+              </div>
+            </div>
           </div>
           <div class="panel-card output-preview">
-            <p class="panel-label">Supported mappings</p>
+            <p class="panel-label">Mapper preview</p>
             <pre>{
   "FRAME": "container",
   "TEXT": "heading/text",
@@ -68,25 +88,25 @@
     <main class="shell">
       <section id="product" class="grid-section reveal">
         <div class="section-heading">
-          <p class="eyebrow">What you need to build</p>
-          <h2>Platform pieces, not just a plugin.</h2>
+          <p class="eyebrow">Product architecture</p>
+          <h2>One surface for conversion, delivery, and iteration.</h2>
         </div>
         <div class="feature-grid">
           <article class="feature-card">
             <h3>Figma plugin</h3>
-            <p>Read the selected node tree, normalize it, and send it to your backend for conversion.</p>
+            <p>Keep the design workflow inside Figma, then push structured frames into the conversion pipeline.</p>
           </article>
           <article class="feature-card">
             <h3>Conversion engine</h3>
-            <p>Map layout, typography, colors, and assets into valid Elementor containers and widgets.</p>
+            <p>Normalize layout, typography, spacing, and component intent into Elementor-compatible JSON.</p>
           </article>
           <article class="feature-card">
             <h3>App backend</h3>
-            <p>Handle API keys, quotas, job persistence, pricing plans, asset storage, and export history.</p>
+            <p>Run keys, usage limits, export history, pricing tiers, and future billing from the same control plane.</p>
           </article>
           <article class="feature-card">
             <h3>WordPress delivery</h3>
-            <p>Import JSON today, then add a WordPress plugin later for one-click publishing and media sync.</p>
+            <p>Import JSON today and leave room for a WordPress companion plugin when you need direct publishing.</p>
           </article>
         </div>
       </section>
@@ -94,7 +114,7 @@
       <section id="pricing" class="grid-section reveal">
         <div class="section-heading">
           <p class="eyebrow">Pricing</p>
-          <h2>Simple plans for a plugin-led workflow.</h2>
+          <h2>Simple pricing, shaped around exports and plugin usage.</h2>
         </div>
         <div id="pricing-grid" class="feature-grid pricing-grid"></div>
       </section>
@@ -102,7 +122,7 @@
       <section id="dashboard" class="dashboard-section reveal">
         <div class="section-heading">
           <p class="eyebrow">Dashboard</p>
-          <h2>Run the local SaaS MVP with plan limits, keys, and job history.</h2>
+          <h2>Operate the local SaaS MVP from one minimal control surface.</h2>
         </div>
 
         <div class="dashboard-grid">
@@ -174,7 +194,7 @@
       <section id="plugin" class="plugin-section reveal">
         <div class="section-heading">
           <p class="eyebrow">Plugin install</p>
-          <h2>Use the included Figma plugin shell.</h2>
+          <h2>Use the included plugin shell and local conversion endpoint.</h2>
         </div>
         <div class="two-up">
           <div class="feature-card">
@@ -192,7 +212,7 @@
       <section id="playground" class="playground reveal">
         <div class="section-heading">
           <p class="eyebrow">Playground</p>
-          <h2>Test the converter without opening Figma.</h2>
+          <h2>Inspect payloads and export Elementor JSON without opening Figma.</h2>
         </div>
 
         <div class="playground-credentials">
@@ -227,6 +247,16 @@
         <div id="report" class="report"></div>
       </section>
     </main>
+
+    <footer class="shell site-footer">
+      <div class="footer-card">
+        <div class="footer-meta">
+          <strong>Figma2Element v0.1.0</strong>
+          <span>Copyright © 2026 Figma2Element. Prompted by Farshad and built by AI.</span>
+        </div>
+        <div class="footer-note">Minimal local SaaS MVP for Figma to Elementor conversion.</div>
+      </div>
+    </footer>
 
     <script type="module" src="/app.js"></script>
   </body>

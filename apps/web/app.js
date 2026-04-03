@@ -56,10 +56,12 @@ function renderPlans(plans, activePlanId) {
   pricingGridEl.innerHTML = plans
     .map((plan) => {
       const exportLabel = plan.exportsPerMonth < 0 ? "Unlimited exports" : `${plan.exportsPerMonth} exports / month`;
+      const priceLabel = plan.priceLabel || `$${plan.priceMonthly}`;
+      const cadenceLabel = plan.priceSuffix || (typeof plan.priceMonthly === "number" ? "/month" : "");
       return `
         <article class="feature-card ${plan.id === activePlanId ? "plan-active" : ""}">
           <p class="panel-label">${escapeHtml(plan.name)}</p>
-          <div class="price">$${plan.priceMonthly}<small>/month</small></div>
+          <div class="price">${escapeHtml(priceLabel)}<small>${escapeHtml(cadenceLabel)}</small></div>
           <p>${escapeHtml(exportLabel)} · ${plan.seats} seat${plan.seats > 1 ? "s" : ""}</p>
           <ul class="feature-list">
             ${plan.features.map((feature) => `<li>${escapeHtml(feature)}</li>`).join("")}

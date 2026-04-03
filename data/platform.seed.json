@@ -1,13 +1,15 @@
 {
   "plans": [
     {
-      "id": "starter",
-      "name": "Starter",
-      "priceMonthly": 9,
-      "exportsPerMonth": 25,
+      "id": "free",
+      "name": "Free",
+      "priceMonthly": 0,
+      "priceLabel": "Free",
+      "priceSuffix": "",
+      "exportsPerMonth": 10,
       "seats": 1,
       "features": [
-        "25 exports per month",
+        "10 exports per month",
         "1 Figma plugin key",
         "Basic widget support",
         "Community support"
@@ -16,7 +18,9 @@
     {
       "id": "pro",
       "name": "Pro",
-      "priceMonthly": 19,
+      "priceMonthly": 9,
+      "priceLabel": "$9",
+      "priceSuffix": "/month",
       "exportsPerMonth": 75,
       "seats": 1,
       "features": [
@@ -27,16 +31,18 @@
       ]
     },
     {
-      "id": "team",
-      "name": "Team",
-      "priceMonthly": 49,
+      "id": "custom",
+      "name": "Custom",
+      "priceMonthly": null,
+      "priceLabel": "Custom",
+      "priceSuffix": "",
       "exportsPerMonth": -1,
       "seats": 5,
       "features": [
         "Unlimited exports",
         "Team seats",
         "Shared job history",
-        "Dedicated onboarding"
+        "Priority onboarding"
       ]
     }
   ],
@@ -66,4 +72,3 @@
   ],
   "jobs": []
 }
-
