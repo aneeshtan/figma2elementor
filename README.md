@@ -22,6 +22,11 @@ This project is licensed under the MIT license for open-source use.
   - local API server
   - platform dashboard
   - live conversion playground
+- `apps/platform`
+  - Laravel auth app
+  - Stripe subscription billing
+  - API key management
+  - conversion job dashboard
 - `apps/figma-plugin`
   - plugin manifest
   - plugin controller
@@ -101,11 +106,21 @@ Current platform capabilities:
 - API key generation
 - saved conversion jobs with download endpoints
 - plugin and playground authentication
+- Laravel platform scaffold with auth and Stripe billing in `apps/platform`
 
-Not implemented yet:
+Partially implemented now:
+
+- Laravel Breeze authentication
+- Laravel Cashier subscription billing
+- hosted Stripe Checkout and Billing Portal routes
+- hashed API key management
+- conversion job persistence model
+
+Still not implemented yet:
 
 - full asset upload pipeline
-- authentication, billing, quotas, teams
+- wiring the Node converter into Laravel runtime
+- teams and seat-based billing
 - background jobs and queue retries
 - WordPress plugin automation
 - advanced responsive rules
@@ -113,8 +128,8 @@ Not implemented yet:
 
 ## Recommended next build steps
 
-1. Add persistent auth, job storage, and Stripe billing.
-2. Replace the in-memory API with a real backend and queue worker.
+1. Move API key verification and job persistence from `apps/web` into `apps/platform`.
+2. Add Stripe webhook handling and quota enforcement in Laravel.
 3. Add signed asset upload and media handling for WordPress.
 4. Expand the mapper for Forms, Icons, Tabs, Accordions, Sliders, WooCommerce widgets, and responsive breakpoints.
 5. Add a WordPress companion plugin for one-click import and media sync.
