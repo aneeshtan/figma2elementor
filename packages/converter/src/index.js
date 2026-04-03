@@ -1243,6 +1243,21 @@ function stripHtmlPrefix(value) {
   return String(value || "").replace(/^el-[a-z0-9-]+:/i, "").trim();
 }
 
+function extractLinkTarget(node, fallbackLabel = "") {
+  const reaction = Array.isArray(node?.reactions) ? node.reactions.find((entry) => entry && (entry.destinationId || entry.navigation)) : null;
+  if (reaction?.navigation && /^https?:\/\//i.test(reaction.navigation)) {
+    return reaction.navigation;
+  }
+
+  const hintLabel = stripHtmlPrefix(getElementorLabel(node, ""));
+  if (/^(\/|#|https?:\/\/)/i.test(hintLabel)) {
+    return hintLabel;
+  }
+
+  const slug = slugify(fallbackLabel || hintLabel || node?.name || "link");
+  return slug ? `#${slug}` : "#";
+}
+
 function buildVideoEmbedHtml(url) {
   const value = String(url || "").trim();
   if (!value) {
@@ -1296,6 +1311,124 @@ function mapGoogleMapsNode(node, helpers) {
 </style>`;
 
   return createHtmlWidgetNode(node.name || "Map", html, helpers);
+}
+
+function getMenuItemNodes(node) {
+  return (node.children || []).filter(
+    (child) =>
+      child.visible !== false &&
+      (getWidgetHint(child) === "menu-item" || (hasRole(child, "item") && !getFieldType(child)) || child.type === "TEXT")
+  );
+}
+
+function mapNavNode(node, helpers) {
+  const visibleChildren = (node.children || []).filter((child) => child.visible !== false);
+  const logoNode =
+    visibleChildren.find((child) => hasRole(child, "logo")) ||
+    visibleChildren.find((child) => isImageLikeNode(child)) ||
+    visibleChildren.find((child) => isTextNode(child) && inferTextWidget(child) === "heading") ||
+    null;
+
+  const explicitMenu = visibleChildren.find((child) => getWidgetHint(child) === "menu" || hasRole(child, "menu")) || null;
+  const menuNodes = explicitMenu ? getMenuItemNodes(explicitMenu) : getMenuItemNodes(node).filter((child) => child !== logoNode);
+  const buttonNode = visibleChildren.find((child) => child !== explicitMenu && hasRole(child, "button")) || null;
+  const ctaButton = buttonNode ? extractButtonData(buttonNode) : extractButtonData(node);
+
+  const menuItems = menuNodes
+    .map((child) => {
+      const label =
+        child.type === "TEXT"
+          ? child.characters.trim()
+          : stripHtmlPrefix(
+              getElementorLabel(
+                child,
+                extractFieldTextNodes(child)
+                  .map((textNode) => textNode.characters.trim())
+                  .filter(Boolean)[0] || child.name || "Link"
+              )
+            );
+      if (!label) {
+        return null;
+      }
+
+      const active = getNodeState(child) === "active" || getNodeState(child) === "selected";
+      return {
+        label,
+        href: extractLinkTarget(child, label),
+        active
+      };
+    })
+    .filter(Boolean);
+
+  const logoText =
+    logoNode && isTextNode(logoNode)
+      ? logoNode.characters.trim()
+      : logoNode
+        ? stripHtmlPrefix(getElementorLabel(logoNode, logoNode.name || "Logo"))
+        : stripHtmlPrefix(getElementorLabel(node, "Brand"));
+  const logoImage = logoNode?.imageUrl || "";
+  const navId = `f2e-nav-${helpers.nextId(node.name || "nav")}`;
+
+  const html = `
+<header id="${navId}" class="f2e-nav-shell">
+  <div class="f2e-nav">
+    <a class="f2e-nav__brand" href="/">
+      ${logoImage ? `<img src="${escapeAttribute(logoImage)}" alt="${escapeAttribute(logoText)}" />` : `<span>${escapeHtml(logoText)}</span>`}
+    </a>
+    <button class="f2e-nav__toggle" type="button" aria-expanded="false" aria-controls="${navId}-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="f2e-nav__menu" id="${navId}-menu" aria-label="${escapeAttribute(node.name || "Main navigation")}">
+      ${menuItems
+        .map(
+          (item) =>
+            `<a class="f2e-nav__link${item.active ? " is-active" : ""}" href="${escapeAttribute(item.href)}">${escapeHtml(item.label)}</a>`
+        )
+        .join("")}
+      ${
+        ctaButton
+          ? `<a class="f2e-nav__cta" href="${escapeAttribute(extractLinkTarget(buttonNode || node, ctaButton.text))}" style="--f2e-btn-bg:${escapeAttribute(ctaButton.backgroundColor)};--f2e-btn-bg-hover:${escapeAttribute(ctaButton.hoverBackgroundColor)};--f2e-btn-color:${escapeAttribute(ctaButton.textColor)};--f2e-btn-radius:${Number(ctaButton.radius || 10)}px;">${escapeHtml(ctaButton.text)}</a>`
+          : ""
+      }
+    </nav>
+  </div>
+</header>
+<style>
+  #${navId}.f2e-nav-shell{width:100%}
+  #${navId} .f2e-nav{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 0}
+  #${navId} .f2e-nav__brand{display:inline-flex;align-items:center;gap:12px;color:#f8fafc;text-decoration:none;font-size:22px;font-weight:800;line-height:1.1}
+  #${navId} .f2e-nav__brand img{display:block;max-height:42px;max-width:180px;object-fit:contain}
+  #${navId} .f2e-nav__menu{display:flex;align-items:center;justify-content:flex-end;flex:1 1 auto;gap:22px}
+  #${navId} .f2e-nav__link{position:relative;color:#cbd5e1;text-decoration:none;font-size:15px;font-weight:600;line-height:1.2;transition:color .2s ease}
+  #${navId} .f2e-nav__link::after{content:'';position:absolute;left:0;right:0;bottom:-8px;height:2px;background:#f24e1e;transform:scaleX(0);transform-origin:left;transition:transform .2s ease}
+  #${navId} .f2e-nav__link:hover,#${navId} .f2e-nav__link.is-active{color:#fff}
+  #${navId} .f2e-nav__link:hover::after,#${navId} .f2e-nav__link.is-active::after{transform:scaleX(1)}
+  #${navId} .f2e-nav__cta{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--f2e-btn-radius);background:var(--f2e-btn-bg);color:var(--f2e-btn-color);padding:12px 18px;text-decoration:none;font-size:15px;font-weight:700;line-height:1.1;transition:background-color .2s ease,transform .2s ease}
+  #${navId} .f2e-nav__cta:hover{background:var(--f2e-btn-bg-hover);transform:translateY(-2px)}
+  #${navId} .f2e-nav__toggle{display:none;flex-direction:column;gap:4px;width:44px;height:44px;align-items:center;justify-content:center;border:1px solid rgba(148,163,184,.18);border-radius:14px;background:rgba(15,23,42,.28);color:#fff}
+  #${navId} .f2e-nav__toggle span{display:block;width:18px;height:2px;background:currentColor;border-radius:999px}
+  @media (max-width: 920px){
+    #${navId} .f2e-nav{flex-wrap:wrap}
+    #${navId} .f2e-nav__toggle{display:flex}
+    #${navId} .f2e-nav__menu{display:none;flex-direction:column;align-items:flex-start;width:100%;padding-top:8px}
+    #${navId}.is-open .f2e-nav__menu{display:flex}
+  }
+</style>
+<script>
+  (() => {
+    const root = document.getElementById(${JSON.stringify(navId)});
+    if (!root) return;
+    const toggle = root.querySelector('.f2e-nav__toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', () => {
+      const next = !root.classList.contains('is-open');
+      root.classList.toggle('is-open', next);
+      toggle.setAttribute('aria-expanded', next ? 'true' : 'false');
+    });
+  })();
+</script>`;
+
+  return createHtmlWidgetNode(node.name || "Navigation", html, helpers);
 }
 
 function getDirectItemChildren(node) {
@@ -1582,6 +1715,7 @@ function mapPricingTableNode(node, helpers) {
 function mapExplicitFrameWidget(node, helpers) {
   const explicitWidget = getWidgetHint(node);
   const registry = {
+    nav: mapNavNode,
     video: mapVideoNode,
     "google-maps": mapGoogleMapsNode,
     "icon-list": mapIconListNode,
@@ -2341,6 +2475,13 @@ function mapFrameNode(node, helpers, depth) {
     const logoGrid = mapLogoGridNode(node, helpers);
     if (logoGrid) {
       return logoGrid;
+    }
+  }
+
+  if (hasRole(node, "nav")) {
+    const nav = mapNavNode(node, helpers);
+    if (nav) {
+      return nav;
     }
   }
 

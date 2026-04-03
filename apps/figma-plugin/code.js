@@ -258,6 +258,18 @@ function parseElementorHint(name) {
   let iconName = null;
 
   if (type === "container") widgetHint = "container";
+  if (type === "nav" || type === "navbar" || type === "header") {
+    widgetHint = "nav";
+    role = "nav";
+  }
+  if (type === "menu") {
+    widgetHint = "menu";
+    role = "menu";
+  }
+  if (type === "nav-item" || type === "menu-item" || type === "link") {
+    widgetHint = "menu-item";
+    role = "item";
+  }
   if (type === "button") {
     widgetHint = "button";
     role = "button";
@@ -407,7 +419,7 @@ function inferSemanticRole(name) {
     return elementorHint.role;
   }
 
-  const explicitMatches = normalizedName.match(/\[(slider|carousel|slide|track|dots|dot|button|card|hover-target|prev|next|media|content|tabs|tab|accordion|item|icon|testimonial|pricing-table|feature-grid|stats|stat|logo-grid|logo)\]/g);
+  const explicitMatches = normalizedName.match(/\[(slider|carousel|slide|track|dots|dot|button|card|hover-target|prev|next|media|content|tabs|tab|accordion|item|icon|testimonial|pricing-table|feature-grid|stats|stat|logo-grid|logo|nav|menu)\]/g);
 
   if (explicitMatches && explicitMatches.length) {
     return explicitMatches[0].replace(/[\[\]]/g, "");
@@ -420,6 +432,8 @@ function inferSemanticRole(name) {
   if (normalizedName === "dot" || normalizedName.includes(" dot ")) return "dot";
   if (normalizedName.includes("button") || normalizedName.includes("cta")) return "button";
   if (normalizedName.includes("card")) return "card";
+  if (normalizedName.includes("navbar") || normalizedName.includes("header") || normalizedName.includes("nav")) return "nav";
+  if (normalizedName.includes("menu")) return "menu";
   if (normalizedName.includes("feature-grid") || normalizedName.includes("features")) return "feature-grid";
   if (normalizedName.includes("pricing-table") || normalizedName.includes("price-table")) return "pricing-table";
   if (normalizedName.includes("testimonial")) return "testimonial";

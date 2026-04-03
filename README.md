@@ -142,6 +142,7 @@ Use `el-*` names when you want strict widget mapping. Use semantic roles and mot
 Strict widget names currently supported:
 
 - `el-container:name`
+- `el-nav:name` with optional `el-menu:name`, `el-nav-item:label`, and CTA button
 - `el-heading:name`
 - `el-text-editor:name`
 - `el-image:name`
