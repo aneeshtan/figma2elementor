@@ -45,9 +45,9 @@
             </header>
 
             <main class="mx-auto max-w-7xl px-6 pb-20 pt-6">
-                <section class="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
-                    <aside class="lg:sticky lg:top-6 lg:self-start">
-                        <div class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 backdrop-blur">
+                <section class="flex flex-col gap-8 md:flex-row md:items-start">
+                    <aside class="md:sticky md:top-6 md:w-72 md:shrink-0">
+                        <div class="overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-900/90 backdrop-blur">
                             <div class="border-b border-white/10 px-5 py-5">
                                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-orange-400">Documentation</p>
                                 <h1 class="mt-3 text-2xl font-semibold tracking-tight text-white">Figma2Element Docs</h1>
@@ -62,7 +62,7 @@
                             <div class="border-t border-white/10 px-3 py-3">
                                 <nav class="space-y-1">
                                     @foreach ($sections as $section)
-                                        <a href="#{{ $section['id'] }}" class="block rounded-2xl px-4 py-3 text-sm text-slate-300 transition hover:bg-black/30 hover:text-white">
+                                        <a href="#{{ $section['id'] }}" class="block rounded-xl px-4 py-3 text-sm text-slate-300 transition hover:bg-white/5 hover:text-white">
                                             {{ $section['label'] }}
                                         </a>
                                     @endforeach
@@ -74,23 +74,23 @@
                         </div>
                     </aside>
 
-                    <div class="space-y-6">
-                        <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/20 backdrop-blur">
+                    <div class="min-w-0 flex-1 space-y-6 md:max-w-4xl">
+                        <section class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-8 shadow-2xl shadow-black/20 backdrop-blur">
                             <p class="text-sm font-semibold uppercase tracking-[0.24em] text-orange-400">Public Guide</p>
-                            <h2 class="mt-5 max-w-4xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                            <h2 class="mt-4 max-w-4xl text-3xl font-semibold tracking-tight text-white sm:text-4xl">
                                 Everything you need to install, connect, export, import, and troubleshoot Figma2Element.
                             </h2>
-                            <p class="mt-6 max-w-3xl text-lg leading-8 text-slate-300">
+                            <p class="mt-5 max-w-3xl text-base leading-8 text-slate-300">
                                 This guide covers the full Figma2Element workflow: platform account setup, API keys, Figma exports,
                                 WordPress imports, usage limits, best practices, and recovery paths when something breaks.
                             </p>
-                            <div class="mt-8 flex flex-wrap gap-3">
+                            <div class="mt-7 flex flex-wrap gap-3">
                                 <a href="#quick-start" class="rounded-full bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-400">Start here</a>
                                 <a href="#troubleshooting" class="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-white/30 hover:bg-white/10">Troubleshooting</a>
                             </div>
                         </section>
 
-                        <section id="overview" class="rounded-[1.75rem] border border-white/10 bg-white/5 p-7 backdrop-blur">
+                        <section id="overview" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">Overview</h2>
                             <p class="mt-4 text-base leading-8 text-slate-300">
                                 Figma2Element is a complete conversion workflow for turning structured Figma sections into Elementor-ready
@@ -115,7 +115,7 @@
                             </div>
                         </section>
 
-                        <section id="quick-start" class="rounded-[1.75rem] border border-white/10 bg-white/5 p-7 backdrop-blur">
+                        <section id="quick-start" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">Quick Start</h2>
                             <div class="mt-6 grid gap-4 md:grid-cols-3">
                                 <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
@@ -149,7 +149,7 @@
                             </div>
                         </section>
 
-                        <section id="api-keys" class="rounded-[1.75rem] border border-white/10 bg-white/5 p-7 backdrop-blur">
+                        <section id="api-keys" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">API Keys & Endpoint</h2>
                             <p class="mt-4 text-base leading-8 text-slate-300">
                                 Your API key connects the platform, Figma plugin, and WordPress plugin. It authorizes exports, lets the
@@ -177,7 +177,7 @@ GET /api/jobs/{id}/download</code></pre>
                             </div>
                         </section>
 
-                        <section id="plugin-flow" class="rounded-[1.75rem] border border-white/10 bg-white/5 p-7 backdrop-blur">
+                        <section id="plugin-flow" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">Figma Plugin</h2>
                             <div class="mt-4 space-y-5 text-sm leading-7 text-slate-300">
                                 <p>Use the plugin to export selected sections from Figma to your Figma2Element platform.</p>
@@ -211,7 +211,7 @@ motion:autoplay</code></pre>
                             </div>
                         </section>
 
-                        <section id="wordpress-plugin" class="rounded-[1.75rem] border border-white/10 bg-white/5 p-7 backdrop-blur">
+                        <section id="wordpress-plugin" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">WordPress Plugin</h2>
                             <p class="mt-4 text-base leading-8 text-slate-300">
                                 The WordPress companion plugin pulls completed jobs from the platform and imports them into Elementor.
@@ -241,7 +241,7 @@ motion:autoplay</code></pre>
                             </div>
                         </section>
 
-                        <section id="usage" class="rounded-[1.75rem] border border-white/10 bg-white/5 p-7 backdrop-blur">
+                        <section id="usage" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">Plan Limits & Usage</h2>
                             <p class="mt-4 text-base leading-8 text-slate-300">
                                 Each successful conversion job consumes one unit of usage. Job history, API key activity, and plan-level access live in the same dashboard.
@@ -279,7 +279,7 @@ motion:autoplay</code></pre>
                             </p>
                         </section>
 
-                        <section id="troubleshooting" class="rounded-[1.75rem] border border-white/10 bg-white/5 p-7 backdrop-blur">
+                        <section id="troubleshooting" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">Troubleshooting</h2>
                             <div class="mt-6 space-y-4">
                                 <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
@@ -301,7 +301,7 @@ motion:autoplay</code></pre>
                             </div>
                         </section>
 
-                        <section id="best-practices" class="rounded-[1.75rem] border border-white/10 bg-white/5 p-7 backdrop-blur">
+                        <section id="best-practices" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">Best Practices</h2>
                             <div class="mt-6 grid gap-4 md:grid-cols-2">
                                 <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
@@ -323,7 +323,7 @@ motion:autoplay</code></pre>
                             </div>
                         </section>
 
-                        <section id="resources" class="rounded-[1.75rem] border border-white/10 bg-white/5 p-7 backdrop-blur">
+                        <section id="resources" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">More Resources</h2>
                             <div class="mt-6 grid gap-4 md:grid-cols-2">
                                 <a href="https://github.com/aneeshtan/figma2elementor" class="rounded-3xl border border-white/10 bg-black/20 p-5 transition hover:border-white/20 hover:bg-black/30">
@@ -345,7 +345,7 @@ motion:autoplay</code></pre>
                             </div>
                         </section>
 
-                        <section id="help" class="rounded-[1.75rem] border border-white/10 bg-white/5 p-7 backdrop-blur">
+                        <section id="help" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">Need Help?</h2>
                             <p class="mt-4 text-base leading-8 text-slate-300">
                                 If you run into a conversion edge case, import failure, or fidelity mismatch, capture the Figma section, the exported JSON, and a screenshot of the Elementor result.
