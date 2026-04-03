@@ -13,6 +13,7 @@
                 ['id' => 'quick-start', 'label' => 'Quick Start'],
                 ['id' => 'api-keys', 'label' => 'API Keys & Endpoint'],
                 ['id' => 'plugin-flow', 'label' => 'Figma Plugin'],
+                ['id' => 'naming-patterns', 'label' => 'Naming Patterns'],
                 ['id' => 'wordpress-plugin', 'label' => 'WordPress Plugin'],
                 ['id' => 'usage', 'label' => 'Plan Limits & Usage'],
                 ['id' => 'troubleshooting', 'label' => 'Troubleshooting'],
@@ -208,6 +209,129 @@ motion:autoplay</code></pre>
                                         <li>Responsive naming tokens like <code>hide:tablet</code> and <code>stack:mobile</code></li>
                                     </ul>
                                 </div>
+                            </div>
+                        </section>
+
+                        <section id="naming-patterns" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
+                            <h2 class="text-2xl font-semibold text-white">Naming Patterns</h2>
+                            <p class="mt-4 text-base leading-8 text-slate-300">
+                                Naming is the fastest way to improve export quality. The more explicit your layer and frame names are,
+                                the less the converter has to guess. Use <code>el-type:label</code> for direct widget mapping, then use
+                                role tags and motion tokens inside more complex sections.
+                            </p>
+
+                            <div class="mt-6 rounded-3xl border border-white/10 bg-slate-950/70 p-5">
+                                <div class="text-xs font-semibold uppercase tracking-[0.22em] text-orange-300">Base format</div>
+                                <pre class="mt-3 overflow-x-auto text-sm leading-7 text-slate-200"><code>el-type:label</code></pre>
+                            </div>
+
+                            <div class="mt-6 grid gap-4 md:grid-cols-2">
+                                <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+                                    <div class="text-sm font-semibold text-white">Core widgets</div>
+                                    <pre class="mt-3 overflow-x-auto text-sm leading-7 text-slate-200"><code>el-container:Hero
+el-heading:Hero Title
+el-text-editor:Intro Copy
+el-image:Hero Photo
+el-button:Get Started
+el-divider:Rule
+el-spacer:Gap
+el-icon:[star]</code></pre>
+                                </div>
+                                <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+                                    <div class="text-sm font-semibold text-white">Navigation</div>
+                                    <pre class="mt-3 overflow-x-auto text-sm leading-7 text-slate-200"><code>el-nav:Main Header
+el-menu:Primary
+el-nav-item:Home
+el-nav-item:Pricing
+el-nav-item:Contact</code></pre>
+                                </div>
+                                <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+                                    <div class="text-sm font-semibold text-white">Forms</div>
+                                    <pre class="mt-3 overflow-x-auto text-sm leading-7 text-slate-200"><code>el-form:Get a Quote
+el-input:Full Name
+el-email:Email
+el-tel:Phone
+el-select:Service
+el-textarea:Message
+el-submit:Submit</code></pre>
+                                </div>
+                                <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+                                    <div class="text-sm font-semibold text-white">Interactive blocks</div>
+                                    <pre class="mt-3 overflow-x-auto text-sm leading-7 text-slate-200"><code>el-tabs:Features
+el-tab:Overview
+el-accordion:FAQ
+el-item:Question 1
+el-slider:Related Offerings
+el-slide:Deck Stores
+el-video:https://www.youtube.com/watch?v=...
+el-google-maps:Dubai Marina</code></pre>
+                                </div>
+                                <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+                                    <div class="text-sm font-semibold text-white">Marketing sections</div>
+                                    <pre class="mt-3 overflow-x-auto text-sm leading-7 text-slate-200"><code>el-feature-grid:Offerings
+el-card:Deck Stores
+el-stats:KPIs
+el-stat:Projects
+el-logo-grid:Partners
+el-testimonial:Customer Story
+el-pricing-table:Pro</code></pre>
+                                </div>
+                                <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+                                    <div class="text-sm font-semibold text-white">Role tags</div>
+                                    <pre class="mt-3 overflow-x-auto text-sm leading-7 text-slate-200"><code>[media]
+[content]
+[button]
+[track]
+[slide]
+[dots]
+[dot]</code></pre>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 grid gap-4 md:grid-cols-2">
+                                <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+                                    <div class="text-sm font-semibold text-white">Motion and responsive tokens</div>
+                                    <pre class="mt-3 overflow-x-auto text-sm leading-7 text-slate-200"><code>motion:autoplay
+motion:grow
+motion:lift
+motion:fade-up
+hide:mobile
+hide:tablet
+hide:desktop
+stack:mobile
+stack:tablet</code></pre>
+                                </div>
+                                <div class="rounded-3xl border border-white/10 bg-black/20 p-5">
+                                    <div class="text-sm font-semibold text-white">Example section structure</div>
+                                    <pre class="mt-3 overflow-x-auto text-sm leading-7 text-slate-200"><code>el-slider:Related Offerings motion:autoplay
+  Slides [track]
+    Deck Stores [slide]
+      Image [media]
+      Content [content]
+      Read More [button]</code></pre>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 grid gap-4 md:grid-cols-2">
+                                <div class="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-5">
+                                    <div class="text-sm font-semibold text-emerald-100">Good naming</div>
+                                    <pre class="mt-3 overflow-x-auto text-sm leading-7 text-emerald-50"><code>el-form:Get a Quote
+el-button:Get Started
+el-feature-grid:Offerings
+hide:mobile</code></pre>
+                                </div>
+                                <div class="rounded-3xl border border-red-500/20 bg-red-500/10 p-5">
+                                    <div class="text-sm font-semibold text-red-100">Bad naming</div>
+                                    <pre class="mt-3 overflow-x-auto text-sm leading-7 text-red-50"><code>Group 123
+Frame copy 2
+Rectangle 44
+Text 18</code></pre>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5 text-sm leading-7 text-slate-300">
+                                Use one clear purpose per frame. If a section must become a specific Elementor widget, name it explicitly.
+                                If a section is interactive, add role tags and tokens so the converter can preserve that behavior instead of guessing it.
                             </div>
                         </section>
 
