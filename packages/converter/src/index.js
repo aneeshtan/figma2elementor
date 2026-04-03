@@ -90,6 +90,24 @@ function getFieldType(node) {
   return hint && typeof hint.fieldType === "string" && hint.fieldType ? hint.fieldType : null;
 }
 
+function getElementorLabel(node, fallback = "") {
+  const hint = getElementorHint(node);
+  if (hint && typeof hint.label === "string" && hint.label.trim()) {
+    return hint.label.trim();
+  }
+
+  return fallback || node?.name || "";
+}
+
+function getIconName(node) {
+  const hint = getElementorHint(node);
+  if (hint && typeof hint.iconName === "string" && hint.iconName.trim()) {
+    return hint.iconName.trim().toLowerCase();
+  }
+
+  return null;
+}
+
 function getNodeRole(node) {
   const semantics = getSemantics(node);
   return typeof semantics.role === "string" && semantics.role ? semantics.role : null;
@@ -1138,6 +1156,236 @@ function mapDividerNode(node, helpers) {
   };
 }
 
+function mapIconNameToLibrary(iconName) {
+  const normalized = String(iconName || "").trim().toLowerCase();
+  if (!normalized) {
+    return {
+      value: "fas fa-star",
+      library: "fa-solid"
+    };
+  }
+
+  const aliases = {
+    arrow: "arrow-right",
+    checkmark: "check",
+    mail: "envelope",
+    location: "location-dot",
+    pin: "location-dot",
+    phone: "phone",
+    time: "clock",
+    user: "user",
+    star: "star",
+    plus: "plus",
+    minus: "minus",
+    chevron: "chevron-right",
+    close: "xmark",
+    menu: "bars"
+  };
+  const icon = aliases[normalized] || normalized;
+  const style = ["brands", "facebook", "instagram", "linkedin", "x-twitter", "github", "youtube"].includes(icon)
+    ? { prefix: "fab", library: "fa-brands" }
+    : { prefix: "fas", library: "fa-solid" };
+
+  return {
+    value: `${style.prefix} fa-${icon}`,
+    library: style.library
+  };
+}
+
+function mapIconNode(node, helpers) {
+  const iconFill = firstSolidFill(node);
+  const bounds = getNodeBounds(node);
+  const icon = mapIconNameToLibrary(getIconName(node) || getElementorLabel(node, "star"));
+
+  return {
+    id: helpers.nextId(node.name),
+    elType: "widget",
+    widgetType: "icon",
+    isInner: false,
+    settings: {
+      _title: node.name || "Icon",
+      selected_icon: icon,
+      view: "default",
+      align: "left",
+      primary_color: normalizeColor(iconFill?.color) || "#303351",
+      size: {
+        unit: "px",
+        size: Math.max(16, Math.round(Math.min(bounds.width || 24, bounds.height || 24))),
+        sizes: []
+      }
+    },
+    elements: []
+  };
+}
+
+function extractContentText(node) {
+  return collectDescendants(node, true)
+    .filter((child) => isTextNode(child))
+    .map((child) => child.characters.trim())
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function buildTextContentHtml(texts, fallbackTitle) {
+  const chunks = Array.isArray(texts) ? texts.filter(Boolean) : [];
+  const html = chunks.length
+    ? chunks
+        .join("\n\n")
+        .split(/\n{2,}/)
+        .map((chunk) => `<p>${escapeHtml(chunk).replace(/\n/g, "<br />")}</p>`)
+        .join("")
+    : "";
+
+  return html || `<p>${escapeHtml(fallbackTitle)} content</p>`;
+}
+
+function buildTabsHtml(node, items, helpers) {
+  const tabsId = `f2e-tabs-${helpers.nextId(node.name || "tabs")}`;
+  const tabsMarkup = items
+    .map(
+      (item, index) =>
+        `<button class="f2e-tabs__tab${index === 0 ? " is-active" : ""}" type="button" data-tab-index="${index}">${escapeHtml(item.title)}</button>`
+    )
+    .join("");
+  const panelsMarkup = items
+    .map(
+      (item, index) =>
+        `<div class="f2e-tabs__panel${index === 0 ? " is-active" : ""}" data-panel-index="${index}">${item.contentHtml}</div>`
+    )
+    .join("");
+
+  return `
+<div id="${tabsId}" class="f2e-tabs">
+  <div class="f2e-tabs__nav" role="tablist">${tabsMarkup}</div>
+  <div class="f2e-tabs__panels">${panelsMarkup}</div>
+</div>
+<style>
+  #${tabsId}{width:100%}
+  #${tabsId} .f2e-tabs__nav{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+  #${tabsId} .f2e-tabs__tab{border:1px solid rgba(148,163,184,.22);background:rgba(255,255,255,.04);color:#e2e8f0;border-radius:999px;padding:12px 18px;font-size:14px;font-weight:600;line-height:1.1;cursor:pointer;transition:background-color .2s ease,border-color .2s ease,color .2s ease}
+  #${tabsId} .f2e-tabs__tab.is-active{background:#f24e1e;border-color:#f24e1e;color:#fff}
+  #${tabsId} .f2e-tabs__panel{display:none;border:1px solid rgba(148,163,184,.16);border-radius:24px;background:rgba(15,23,42,.32);padding:24px}
+  #${tabsId} .f2e-tabs__panel.is-active{display:block}
+  #${tabsId} .f2e-tabs__panel h3:first-child,#${tabsId} .f2e-tabs__panel p:first-child{margin-top:0}
+</style>
+<script>
+  (function() {
+    var root = document.getElementById(${JSON.stringify(tabsId)});
+    if (!root) return;
+    var tabs = Array.prototype.slice.call(root.querySelectorAll('.f2e-tabs__tab'));
+    var panels = Array.prototype.slice.call(root.querySelectorAll('.f2e-tabs__panel'));
+    function setActive(index) {
+      tabs.forEach(function(tab, tabIndex) { tab.classList.toggle('is-active', tabIndex === index); });
+      panels.forEach(function(panel, panelIndex) { panel.classList.toggle('is-active', panelIndex === index); });
+    }
+    tabs.forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        setActive(Number(tab.getAttribute('data-tab-index') || 0));
+      });
+    });
+    setActive(0);
+  })();
+</script>`;
+}
+
+function mapTabsNode(node, helpers) {
+  const items = (node.children || [])
+    .filter((child) => child.visible !== false && (getWidgetHint(child) === "tab-item" || hasRole(child, "tab")))
+    .map((child) => {
+      const title = getElementorLabel(child, child.name || "Tab");
+      const textNodes = extractFieldTextNodes(child).map((textNode) => textNode.characters.trim()).filter(Boolean);
+      const bodyTexts = textNodes.filter((text, index) => !(index === 0 && text === title));
+      const contentHtml = buildTextContentHtml(bodyTexts, title);
+
+      return {
+        title,
+        contentHtml
+      };
+    })
+    .filter((item) => item.title);
+
+  if (items.length < 2) {
+    return null;
+  }
+
+  return createHtmlWidgetNode(`${node.name || "Tabs"} Tabs`, buildTabsHtml(node, items, helpers), helpers);
+}
+
+function buildAccordionHtml(node, items, helpers) {
+  const accordionId = `f2e-accordion-${helpers.nextId(node.name || "accordion")}`;
+  const itemsMarkup = items
+    .map(
+      (item, index) => `
+      <div class="f2e-accordion__item${index === 0 ? " is-open" : ""}">
+        <button class="f2e-accordion__trigger" type="button" data-item-index="${index}">
+          <span>${escapeHtml(item.title)}</span>
+          <span class="f2e-accordion__symbol">+</span>
+        </button>
+        <div class="f2e-accordion__panel"${index === 0 ? ' style="display:block"' : ""}>${item.contentHtml}</div>
+      </div>`
+    )
+    .join("");
+
+  return `
+<div id="${accordionId}" class="f2e-accordion">${itemsMarkup}</div>
+<style>
+  #${accordionId}{display:flex;flex-direction:column;gap:12px;width:100%}
+  #${accordionId} .f2e-accordion__item{border:1px solid rgba(148,163,184,.16);border-radius:22px;background:rgba(15,23,42,.28);overflow:hidden}
+  #${accordionId} .f2e-accordion__trigger{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;background:transparent;color:#fff;padding:18px 22px;font-size:16px;font-weight:700;line-height:1.2;cursor:pointer;text-align:left}
+  #${accordionId} .f2e-accordion__symbol{font-size:20px;line-height:1;transition:transform .2s ease}
+  #${accordionId} .f2e-accordion__item.is-open .f2e-accordion__symbol{transform:rotate(45deg)}
+  #${accordionId} .f2e-accordion__panel{display:none;padding:0 22px 20px;color:#cbd5e1}
+  #${accordionId} .f2e-accordion__panel p:first-child{margin-top:0}
+</style>
+<script>
+  (function() {
+    var root = document.getElementById(${JSON.stringify(accordionId)});
+    if (!root) return;
+    var items = Array.prototype.slice.call(root.querySelectorAll('.f2e-accordion__item'));
+    items.forEach(function(item) {
+      var trigger = item.querySelector('.f2e-accordion__trigger');
+      var panel = item.querySelector('.f2e-accordion__panel');
+      if (!trigger || !panel) return;
+      trigger.addEventListener('click', function() {
+        var isOpen = item.classList.contains('is-open');
+        items.forEach(function(other) {
+          other.classList.remove('is-open');
+          var otherPanel = other.querySelector('.f2e-accordion__panel');
+          if (otherPanel) otherPanel.style.display = 'none';
+        });
+        if (!isOpen) {
+          item.classList.add('is-open');
+          panel.style.display = 'block';
+        }
+      });
+    });
+  })();
+</script>`;
+}
+
+function mapAccordionNode(node, helpers) {
+  const items = (node.children || [])
+    .filter((child) => child.visible !== false && (getWidgetHint(child) === "accordion-item" || hasRole(child, "item")))
+    .map((child) => {
+      const title = getElementorLabel(child, child.name || "Item");
+      const textNodes = extractFieldTextNodes(child).map((textNode) => textNode.characters.trim()).filter(Boolean);
+      const bodyTexts = textNodes.filter((text, index) => !(index === 0 && text === title));
+      const contentHtml = buildTextContentHtml(bodyTexts, title);
+
+      return {
+        title,
+        contentHtml
+      };
+    })
+    .filter((item) => item.title);
+
+  if (!items.length) {
+    return null;
+  }
+
+  return createHtmlWidgetNode(`${node.name || "Accordion"} Accordion`, buildAccordionHtml(node, items, helpers), helpers);
+}
+
 function buildSliderHtml(node, slides, options, helpers) {
   const sliderId = `f2e-slider-${helpers.nextId(node.name || "slider")}`;
   const visibleSlides = Math.max(1, Number(options.visibleSlides || 1));
@@ -1713,6 +1961,20 @@ function mapFrameNode(node, helpers, depth) {
     }
   }
 
+  if (explicitWidget === "tabs" || hasRole(node, "tabs")) {
+    const tabs = mapTabsNode(node, helpers);
+    if (tabs) {
+      return tabs;
+    }
+  }
+
+  if (explicitWidget === "accordion" || hasRole(node, "accordion")) {
+    const accordion = mapAccordionNode(node, helpers);
+    if (accordion) {
+      return accordion;
+    }
+  }
+
   if (explicitWidget === "button") {
     return mapButtonNode(node, helpers);
   }
@@ -1807,6 +2069,10 @@ function mapNode(node, helpers, depth = 0) {
 
   if (node.type === "TEXT") {
     return mapTextNode(node, helpers);
+  }
+
+  if (explicitWidget === "icon" || hasRole(node, "icon")) {
+    return mapIconNode(node, helpers);
   }
 
   if (explicitWidget === "image" && node.imageUrl) {

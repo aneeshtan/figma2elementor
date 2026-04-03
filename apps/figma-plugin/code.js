@@ -255,6 +255,7 @@ function parseElementorHint(name) {
   let role = null;
   let widgetHint = null;
   let fieldType = null;
+  let iconName = null;
 
   if (type === "container") widgetHint = "container";
   if (type === "button") {
@@ -276,6 +277,22 @@ function parseElementorHint(name) {
   if (type === "dots") role = "dots";
   if (type === "dot") role = "dot";
   if (type === "card") role = "card";
+  if (type === "tabs") {
+    widgetHint = "tabs";
+    role = "tabs";
+  }
+  if (type === "tab") {
+    widgetHint = "tab-item";
+    role = "tab";
+  }
+  if (type === "accordion") {
+    widgetHint = "accordion";
+    role = "accordion";
+  }
+  if (type === "accordion-item" || type === "item") {
+    widgetHint = "accordion-item";
+    role = "item";
+  }
   if (type === "form") {
     widgetHint = "form";
     role = "form";
@@ -320,6 +337,12 @@ function parseElementorHint(name) {
     role = "button";
     fieldType = "submit";
   }
+  if (type === "icon") {
+    widgetHint = "icon";
+    role = "icon";
+    const iconMatch = label.match(/\[([a-z0-9-]+)\]/i);
+    iconName = (iconMatch ? iconMatch[1] : label).trim().toLowerCase();
+  }
   if (type === "media") role = "media";
   if (type === "content") role = "content";
   if (type === "spacer") widgetHint = "spacer";
@@ -331,7 +354,8 @@ function parseElementorHint(name) {
     label,
     role,
     widgetHint,
-    fieldType
+    fieldType,
+    iconName
   };
 }
 
@@ -343,7 +367,7 @@ function inferSemanticRole(name) {
     return elementorHint.role;
   }
 
-  const explicitMatches = normalizedName.match(/\[(slider|carousel|slide|track|dots|dot|button|card|hover-target|prev|next|media|content)\]/g);
+  const explicitMatches = normalizedName.match(/\[(slider|carousel|slide|track|dots|dot|button|card|hover-target|prev|next|media|content|tabs|tab|accordion|item|icon)\]/g);
 
   if (explicitMatches && explicitMatches.length) {
     return explicitMatches[0].replace(/[\[\]]/g, "");
@@ -356,6 +380,10 @@ function inferSemanticRole(name) {
   if (normalizedName === "dot" || normalizedName.includes(" dot ")) return "dot";
   if (normalizedName.includes("button") || normalizedName.includes("cta")) return "button";
   if (normalizedName.includes("card")) return "card";
+  if (normalizedName.includes("tabs")) return "tabs";
+  if (normalizedName.includes("accordion")) return "accordion";
+  if (normalizedName.includes("tab")) return "tab";
+  if (normalizedName.includes("icon")) return "icon";
   if (normalizedName.includes("hover-target")) return "hover-target";
   if (normalizedName.includes("previous") || normalizedName.includes("prev")) return "prev";
   if (normalizedName.includes("next")) return "next";
