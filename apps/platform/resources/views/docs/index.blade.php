@@ -46,8 +46,8 @@
 
             <main class="mx-auto max-w-7xl px-6 pb-20 pt-6">
                 <section class="flex flex-col gap-8 md:flex-row md:items-start">
-                    <aside class="md:sticky md:top-6 md:w-72 md:shrink-0">
-                        <div class="overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-900/90 backdrop-blur">
+                    <aside class="md:sticky md:top-6 md:w-72 md:shrink-0 md:self-start">
+                        <div class="overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-900/90 backdrop-blur md:max-h-[calc(100vh-3rem)] md:overflow-y-auto">
                             <div class="border-b border-white/10 px-5 py-5">
                                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-orange-400">Documentation</p>
                                 <h1 class="mt-3 text-2xl font-semibold tracking-tight text-white">Figma2Element Docs</h1>
