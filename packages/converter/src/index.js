@@ -1065,9 +1065,28 @@ function extractSlideCardData(node) {
   const bodyFill = bodyNode ? firstSolidFill(bodyNode) : null;
   const imageBounds = getNodeBounds(imageNode);
   const panelBounds = panelNode ? getNodeBounds(panelNode) : null;
+  const fallbackTitle = stripHtmlPrefix((node.name || "").trim());
+  const resolvedTitle = titleNode?.characters?.trim() || fallbackTitle || "Slide";
+  const isNumericFallbackTitle = /^\d+$/.test(resolvedTitle);
+  const slideStroke = firstStroke(node) || firstStroke(panelNode);
+  const slideFill = firstSolidFill(node) || panelFill;
+
+  if (!bodyNode && !button && (!titleNode || isNumericFallbackTitle)) {
+    return {
+      type: "logo",
+      title: !isNumericFallbackTitle ? resolvedTitle : "Logo",
+      imageUrl: imageNode.imageUrl,
+      cardColor: normalizeColor(slideFill?.color) || "#ffffff",
+      borderColor: normalizeColor(slideStroke?.color) || "rgba(148,163,184,.24)",
+      cardRadius: node.cornerRadius || panelNode?.cornerRadius || 12,
+      imageRadius: imageNode.cornerRadius || node.cornerRadius || 12,
+      minHeight: Math.max(imageBounds.height || 0, getNodeBounds(node).height || 0, 92)
+    };
+  }
 
   return {
-    title: titleNode?.characters?.trim() || node.name || "Slide",
+    type: "content",
+    title: resolvedTitle,
     body: bodyNode?.characters?.trim() || "",
     imageUrl: imageNode.imageUrl,
     panelColor: normalizeColor(panelFill?.color) || "#c2e3ed",
@@ -2115,6 +2134,15 @@ function buildSliderHtml(node, slides, options, helpers) {
   const dots = Array.from({ length: dotCount }, (_, index) => index);
   const slideMarkup = slides
     .map((slide, index) => {
+      if (slide.type === "logo") {
+        return `
+        <article class="f2e-slider__slide f2e-slider__slide--logo" data-slide-index="${index}">
+          <div class="f2e-slider__logo-card" style="--f2e-logo-bg:${escapeAttribute(slide.cardColor)};--f2e-logo-border:${escapeAttribute(slide.borderColor)};--f2e-logo-radius:${Number(slide.cardRadius || 12)}px;--f2e-logo-height:${Math.round(slide.minHeight)}px;">
+            <img src="${escapeAttribute(slide.imageUrl)}" alt="${escapeAttribute(slide.title || `Logo ${index + 1}`)}" />
+          </div>
+        </article>`;
+      }
+
       const buttonMarkup = slide.button
         ? `<button class="f2e-slider__button" type="button" style="--f2e-btn-bg:${escapeAttribute(slide.button.backgroundColor)};--f2e-btn-bg-hover:${escapeAttribute(slide.button.hoverBackgroundColor)};--f2e-btn-color:${escapeAttribute(slide.button.textColor)};--f2e-btn-radius:${Number(slide.button.radius || 6)}px;">${escapeHtml(slide.button.text)}</button>`
         : "";
@@ -2157,6 +2185,8 @@ function buildSliderHtml(node, slides, options, helpers) {
   #${sliderId} .f2e-slider__viewport{overflow:hidden;width:100%}
   #${sliderId} .f2e-slider__track{display:flex;gap:var(--f2e-gap);transition:transform ${transitionDuration}ms ease}
   #${sliderId} .f2e-slider__slide{flex:0 0 calc((100% - (var(--f2e-gap) * (var(--f2e-visible) - 1))) / var(--f2e-visible))}
+  #${sliderId} .f2e-slider__logo-card{display:flex;align-items:center;justify-content:center;min-height:var(--f2e-logo-height);padding:18px;border-radius:var(--f2e-logo-radius);background:var(--f2e-logo-bg);border:1px solid var(--f2e-logo-border);box-shadow:0 10px 24px rgba(15,23,42,.04)}
+  #${sliderId} .f2e-slider__logo-card img{display:block;width:100%;height:auto;max-height:72px;object-fit:contain}
   #${sliderId} .f2e-slider__card{display:grid;grid-template-columns:minmax(220px,46%) 1fr;min-height:var(--f2e-card-height);border-radius:var(--f2e-panel-radius);overflow:hidden;box-shadow:0 16px 40px rgba(14,30,37,.08);transform:translateY(0);transition:transform .28s ease,box-shadow .28s ease;background:var(--f2e-panel)}
   #${sliderId} .f2e-slider__card:hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(14,30,37,.15)}
   #${sliderId} .f2e-slider__media{min-height:100%}
