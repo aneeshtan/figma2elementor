@@ -21,6 +21,11 @@
         gap: 12px;
       }
 
+      .stack-tight {
+        display: grid;
+        gap: 8px;
+      }
+
       input,
       button,
       textarea {
@@ -43,6 +48,11 @@
         background: transparent;
       }
 
+      button:disabled {
+        opacity: 0.65;
+        cursor: wait;
+      }
+
       textarea {
         min-height: 170px;
         resize: vertical;
@@ -60,6 +70,40 @@
         font-size: 12px;
         color: #cbd5e1;
         line-height: 1.5;
+      }
+
+      .status {
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .status.loading {
+        border-color: rgba(15, 118, 110, 0.55);
+        color: #99f6e4;
+      }
+
+      .status.success {
+        border-color: rgba(34, 197, 94, 0.45);
+        color: #bbf7d0;
+      }
+
+      .status.error {
+        border-color: rgba(248, 113, 113, 0.45);
+        color: #fecaca;
+      }
+
+      .detail {
+        font-size: 12px;
+        color: #e5e7eb;
+        line-height: 1.5;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
       }
     </style>
   </head>
@@ -94,7 +138,8 @@
       </label>
 
       <button id="download" class="secondary" type="button" disabled>Download JSON</button>
-      <div id="status" class="meta">Waiting for selection.</div>
+      <div id="status" class="meta status">Waiting for selection.</div>
+      <div id="detail" class="detail">No request has been sent yet.</div>
     </div>
 
     <script>
@@ -104,7 +149,30 @@
       const outputEl = document.querySelector("#output");
       const downloadEl = document.querySelector("#download");
       const statusEl = document.querySelector("#status");
+      const detailEl = document.querySelector("#detail");
+      const convertButton = document.querySelector("#convert");
       let latestTemplate = null;
+      let isLoading = false;
+
+      function setStatus(kind, message, detail = "") {
+        statusEl.className = `meta status${kind ? ` ${kind}` : ""}`;
+        statusEl.textContent = message;
+        detailEl.textContent = detail || "No additional details.";
+      }
+
+      function setLoading(nextValue) {
+        isLoading = nextValue;
+        convertButton.disabled = nextValue;
+        convertButton.textContent = nextValue ? "Converting..." : "Convert";
+      }
+
+      function currentSelection() {
+        try {
+          return selectionEl.value.trim() ? JSON.parse(selectionEl.value) : null;
+        } catch (error) {
+          return null;
+        }
+      }
 
       endpointEl.value = localStorage.getItem("f2e:endpoint") || endpointEl.value;
       apiKeyEl.value = localStorage.getItem("f2e:api-key") || apiKeyEl.value;
@@ -119,16 +187,49 @@
 
       document.querySelector("#refresh").onclick = () => {
         parent.postMessage({ pluginMessage: { type: "refresh-selection" } }, "*");
+        setStatus("loading", "Refreshing selection...", "Reading the current selection from the Figma document.");
       };
 
       document.querySelector("#convert").onclick = () => {
-        statusEl.textContent = "Converting selection...";
+        const endpoint = endpointEl.value.trim();
+        const apiKey = apiKeyEl.value.trim();
+        const selection = currentSelection();
+
+        if (!endpoint) {
+          setStatus("error", "Missing endpoint.", "Paste a valid API endpoint before converting.");
+          return;
+        }
+
+        if (!apiKey) {
+          setStatus("error", "Missing API key.", "Copy an API key from the dashboard and paste it into the plugin.");
+          return;
+        }
+
+        if (!selection || !Array.isArray(selection.children) || !selection.children.length) {
+          setStatus(
+            "error",
+            "No selection available.",
+            "Select a frame or layer in Figma first. If you already selected something, click Refresh selection."
+          );
+          return;
+        }
+
+        outputEl.value = "";
+        latestTemplate = null;
+        downloadEl.disabled = true;
+        setLoading(true);
+        setStatus(
+          "loading",
+          "Sending selection to the API...",
+          `Endpoint: ${endpoint}\nSelected root: ${selection.name || "Untitled selection"}\nSelected nodes: ${selection.children.length}`
+        );
+
         parent.postMessage(
           {
             pluginMessage: {
               type: "convert-selection",
-              endpoint: endpointEl.value.trim(),
-              apiKey: apiKeyEl.value.trim()
+              endpoint,
+              apiKey
             }
           },
           "*"
@@ -161,24 +262,64 @@
 
         if (message.type === "selection-data") {
           selectionEl.value = JSON.stringify(message.payload, null, 2);
-          statusEl.textContent = "Selection ready.";
+          const selectedCount = Array.isArray(message.payload.children) ? message.payload.children.length : 0;
+          setStatus(
+            selectedCount ? "success" : "",
+            selectedCount ? "Selection ready." : "Nothing is selected.",
+            selectedCount
+              ? `Selected root: ${message.payload.name || "Untitled selection"}\nSelected nodes: ${selectedCount}`
+              : "Select a frame or layer in Figma, then click Convert."
+          );
+          return;
+        }
+
+        if (message.type === "plugin-error") {
+          setLoading(false);
+          setStatus(
+            "error",
+            "Plugin initialization failed.",
+            message.payload.error || "Could not initialize plugin access to the current Figma document."
+          );
           return;
         }
 
         if (message.type === "conversion-result") {
+          setLoading(false);
           if (message.payload && message.payload.template) {
             latestTemplate = message.payload.template;
             outputEl.value = JSON.stringify(message.payload.template, null, 2);
             downloadEl.disabled = false;
-            statusEl.textContent = message.payload.report
-              ? `Converted ${message.payload.report.convertedNodes} nodes. Job ${message.payload.job ? message.payload.job.id : "saved"}.`
-              : "Conversion complete.";
+            const convertedNodes = message.payload.report ? message.payload.report.convertedNodes : 0;
+            const jobId = message.payload.job ? message.payload.job.id : "saved";
+            const warnings = message.payload.report && message.payload.report.warnings && message.payload.report.warnings.length
+              ? `Warnings: ${message.payload.report.warnings.join(" | ")}`
+              : "No mapper warnings.";
+            setStatus(
+              "success",
+              `Conversion complete. Job ${jobId}.`,
+              `Converted nodes: ${convertedNodes}\n${warnings}`
+            );
           } else {
             outputEl.value = JSON.stringify(message.payload, null, 2);
-            statusEl.textContent = message.payload.error || "Conversion failed.";
+            setStatus(
+              "error",
+              "Conversion failed.",
+              message.payload && message.payload.error
+                ? message.payload.error
+                : "The plugin did not receive a valid Elementor template response."
+            );
           }
         }
       };
+
+      parent.postMessage(
+        {
+          pluginMessage: {
+            type: "ui-ready"
+          }
+        },
+        "*"
+      );
     </script>
   </body>
 </html>

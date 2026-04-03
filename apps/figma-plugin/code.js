@@ -115,16 +115,43 @@ function getSelectionPayload() {
 }
 
 function sendSelection() {
-  figma.ui.postMessage({
-    type: "selection-data",
-    payload: getSelectionPayload()
-  });
+  try {
+    figma.ui.postMessage({
+      type: "selection-data",
+      payload: getSelectionPayload()
+    });
+  } catch (error) {
+    figma.ui.postMessage({
+      type: "plugin-error",
+      payload: {
+        error: error instanceof Error ? error.message : "Could not read the current Figma selection."
+      }
+    });
+  }
 }
 
-figma.on("selectionchange", sendSelection);
-sendSelection();
+async function initializePlugin() {
+  try {
+    figma.on("selectionchange", sendSelection);
+    sendSelection();
+  } catch (error) {
+    figma.ui.postMessage({
+      type: "plugin-error",
+      payload: {
+        error: error instanceof Error ? error.message : "Could not initialize plugin access to the Figma document."
+      }
+    });
+  }
+}
+
+initializePlugin();
 
 figma.ui.onmessage = async (message) => {
+  if (message.type === "ui-ready") {
+    sendSelection();
+    return;
+  }
+
   if (message.type === "refresh-selection") {
     sendSelection();
     return;
@@ -132,7 +159,19 @@ figma.ui.onmessage = async (message) => {
 
   if (message.type === "convert-selection") {
     try {
+      if (!message.endpoint || typeof message.endpoint !== "string") {
+        throw new Error("Missing API endpoint. Paste a valid /api/convert URL before converting.");
+      }
+
+      if (!message.apiKey || typeof message.apiKey !== "string") {
+        throw new Error("Missing API key. Copy a key from the dashboard and paste it into the plugin.");
+      }
+
       const selectionPayload = getSelectionPayload();
+      if (!selectionPayload.children.length) {
+        throw new Error("No frame or layer is selected. Select a Figma frame, then click Convert again.");
+      }
+
       const response = await fetch(message.endpoint, {
         method: "POST",
         headers: {
@@ -146,7 +185,21 @@ figma.ui.onmessage = async (message) => {
         })
       });
 
-      const result = await response.json();
+      const rawBody = await response.text();
+      let result = null;
+
+      try {
+        result = rawBody ? JSON.parse(rawBody) : null;
+      } catch (error) {
+        result = {
+          ok: false,
+          error: rawBody || "The API returned a non-JSON response."
+        };
+      }
+
+      if (!response.ok) {
+        throw new Error((result && result.error) || `API request failed with status ${response.status}.`);
+      }
 
       figma.ui.postMessage({
         type: "conversion-result",
