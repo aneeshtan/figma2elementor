@@ -337,6 +337,24 @@ function parseElementorHint(name) {
     role = "button";
     fieldType = "submit";
   }
+  if (type === "video") {
+    widgetHint = "video";
+  }
+  if (type === "google-maps" || type === "map") {
+    widgetHint = "google-maps";
+  }
+  if (type === "icon-list") {
+    widgetHint = "icon-list";
+    role = "list";
+  }
+  if (type === "testimonial") {
+    widgetHint = "testimonial";
+    role = "testimonial";
+  }
+  if (type === "pricing-table" || type === "price-table") {
+    widgetHint = "pricing-table";
+    role = "pricing-table";
+  }
   if (type === "icon") {
     widgetHint = "icon";
     role = "icon";

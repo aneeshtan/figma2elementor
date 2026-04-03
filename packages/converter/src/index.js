@@ -1239,6 +1239,167 @@ function buildTextContentHtml(texts, fallbackTitle) {
   return html || `<p>${escapeHtml(fallbackTitle)} content</p>`;
 }
 
+function stripHtmlPrefix(value) {
+  return String(value || "").replace(/^el-[a-z0-9-]+:/i, "").trim();
+}
+
+function buildVideoEmbedHtml(url) {
+  const value = String(url || "").trim();
+  if (!value) {
+    return "<p>Missing video URL.</p>";
+  }
+
+  const youtubeWatch = value.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/i);
+  if (youtubeWatch) {
+    const videoId = youtubeWatch[1];
+    return `<div class="f2e-embed f2e-embed--video"><iframe src="https://www.youtube.com/embed/${escapeAttribute(videoId)}" title="Embedded video" loading="lazy" allowfullscreen></iframe></div>`;
+  }
+
+  const vimeoMatch = value.match(/vimeo\.com\/(\d+)/i);
+  if (vimeoMatch) {
+    return `<div class="f2e-embed f2e-embed--video"><iframe src="https://player.vimeo.com/video/${escapeAttribute(vimeoMatch[1])}" title="Embedded video" loading="lazy" allowfullscreen></iframe></div>`;
+  }
+
+  return `<div class="f2e-embed f2e-embed--video"><video controls preload="metadata" src="${escapeAttribute(value)}"></video></div>`;
+}
+
+function mapVideoNode(node, helpers) {
+  const label = getElementorLabel(node, node.name || "Video");
+  const videoUrl = stripHtmlPrefix(label);
+  const html = `
+<div class="f2e-embed-shell">
+  ${buildVideoEmbedHtml(videoUrl)}
+</div>
+<style>
+  .f2e-embed-shell{width:100%}
+  .f2e-embed--video{position:relative;width:100%;aspect-ratio:16/9;border-radius:${Number(node.cornerRadius || 18)}px;overflow:hidden;box-shadow:0 18px 42px rgba(15,23,42,.16)}
+  .f2e-embed--video iframe,.f2e-embed--video video{display:block;width:100%;height:100%;border:0;background:#000}
+</style>`;
+
+  return createHtmlWidgetNode(node.name || "Video", html, helpers);
+}
+
+function mapGoogleMapsNode(node, helpers) {
+  const label = getElementorLabel(node, node.name || "Map");
+  const address = stripHtmlPrefix(label);
+  const embedUrl = `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`;
+  const html = `
+<div class="f2e-embed-shell">
+  <div class="f2e-embed f2e-embed--map">
+    <iframe src="${escapeAttribute(embedUrl)}" title="${escapeAttribute(address || "Map")}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </div>
+</div>
+<style>
+  .f2e-embed-shell{width:100%}
+  .f2e-embed--map{width:100%;min-height:${Math.max(280, Math.round(getNodeBounds(node).height || 360))}px;border-radius:${Number(node.cornerRadius || 18)}px;overflow:hidden;border:1px solid rgba(148,163,184,.16);box-shadow:0 18px 42px rgba(15,23,42,.12)}
+  .f2e-embed--map iframe{display:block;width:100%;height:100%;min-height:inherit;border:0}
+</style>`;
+
+  return createHtmlWidgetNode(node.name || "Map", html, helpers);
+}
+
+function getDirectItemChildren(node) {
+  return (node.children || []).filter((child) => child.visible !== false && (hasRole(child, "item") || getWidgetHint(child) === "accordion-item"));
+}
+
+function mapIconListNode(node, helpers) {
+  const itemNodes = getDirectItemChildren(node);
+  const items = itemNodes
+    .map((child) => {
+      const iconChild = collectDescendants(child).find((descendant) => hasRole(descendant, "icon")) || null;
+      const textNodes = extractFieldTextNodes(child).map((textNode) => textNode.characters.trim()).filter(Boolean);
+      const label = getElementorLabel(child, textNodes[0] || child.name || "Item");
+      const icon = mapIconNameToLibrary(getIconName(iconChild) || getIconName(child) || "check");
+      return {
+        label,
+        iconClass: icon.value
+      };
+    })
+    .filter((item) => item.label);
+
+  if (!items.length) {
+    return null;
+  }
+
+  const html = `
+<ul class="f2e-icon-list">
+  ${items
+    .map(
+      (item) =>
+        `<li class="f2e-icon-list__item"><i class="${escapeAttribute(item.iconClass)}" aria-hidden="true"></i><span>${escapeHtml(stripHtmlPrefix(item.label))}</span></li>`
+    )
+    .join("")}
+</ul>
+<style>
+  .f2e-icon-list{display:flex;flex-direction:column;gap:14px;margin:0;padding:0;list-style:none}
+  .f2e-icon-list__item{display:flex;align-items:flex-start;gap:12px;color:#e2e8f0;font-size:16px;line-height:1.5}
+  .f2e-icon-list__item i{margin-top:2px;color:#f24e1e}
+</style>`;
+
+  return createHtmlWidgetNode(node.name || "Icon List", html, helpers);
+}
+
+function mapTestimonialNode(node, helpers) {
+  const descendants = collectDescendants(node);
+  const imageNode = descendants.filter((child) => isImageLikeNode(child)).sort((left, right) => getArea(right) - getArea(left))[0] || null;
+  const texts = extractFieldTextNodes(node).map((textNode) => textNode.characters.trim()).filter(Boolean);
+  const title = stripHtmlPrefix(getElementorLabel(node, texts[0] || "Customer"));
+  const quote = texts.length > 1 ? texts[0] : `${title} testimonial quote`;
+  const meta = texts.length > 1 ? texts.slice(1).join(" · ") : title;
+  const html = `
+<article class="f2e-testimonial">
+  ${imageNode?.imageUrl ? `<img class="f2e-testimonial__avatar" src="${escapeAttribute(imageNode.imageUrl)}" alt="${escapeAttribute(title)}" />` : ""}
+  <div class="f2e-testimonial__body">
+    <blockquote>${escapeHtml(quote)}</blockquote>
+    <div class="f2e-testimonial__meta">${escapeHtml(meta)}</div>
+  </div>
+</article>
+<style>
+  .f2e-testimonial{display:flex;align-items:flex-start;gap:18px;padding:24px;border:1px solid rgba(148,163,184,.16);border-radius:${Number(node.cornerRadius || 24)}px;background:rgba(15,23,42,.28);box-shadow:0 18px 40px rgba(15,23,42,.12)}
+  .f2e-testimonial__avatar{width:72px;height:72px;object-fit:cover;border-radius:999px;flex:0 0 auto}
+  .f2e-testimonial__body{display:flex;flex-direction:column;gap:12px}
+  .f2e-testimonial__body blockquote{margin:0;color:#fff;font-size:18px;line-height:1.6}
+  .f2e-testimonial__meta{color:#94a3b8;font-size:14px;line-height:1.4}
+</style>`;
+
+  return createHtmlWidgetNode(node.name || "Testimonial", html, helpers);
+}
+
+function mapPricingTableNode(node, helpers) {
+  const texts = extractFieldTextNodes(node).map((textNode) => textNode.characters.trim()).filter(Boolean);
+  const button = extractButtonData(node);
+  const title = stripHtmlPrefix(getElementorLabel(node, texts[0] || node.name || "Plan"));
+  const price = texts.find((text) => /\$\s*\d|free|custom/i.test(text)) || "$0";
+  const subtitle = texts.find((text, index) => index > 0 && text !== price) || "";
+  const features = texts.filter((text) => text !== title && text !== price && text !== subtitle).slice(0, 6);
+  const html = `
+<article class="f2e-pricing">
+  <div class="f2e-pricing__title">${escapeHtml(title)}</div>
+  <div class="f2e-pricing__price">${escapeHtml(price)}</div>
+  ${subtitle ? `<div class="f2e-pricing__subtitle">${escapeHtml(subtitle)}</div>` : ""}
+  <ul class="f2e-pricing__features">
+    ${features.map((feature) => `<li>${escapeHtml(feature)}</li>`).join("")}
+  </ul>
+  ${
+    button
+      ? `<button class="f2e-pricing__button" type="button" style="--f2e-btn-bg:${escapeAttribute(button.backgroundColor)};--f2e-btn-bg-hover:${escapeAttribute(button.hoverBackgroundColor)};--f2e-btn-color:${escapeAttribute(button.textColor)};--f2e-btn-radius:${Number(button.radius || 10)}px;">${escapeHtml(button.text)}</button>`
+      : ""
+  }
+</article>
+<style>
+  .f2e-pricing{display:flex;flex-direction:column;gap:16px;padding:28px;border:1px solid rgba(148,163,184,.16);border-radius:${Number(node.cornerRadius || 28)}px;background:rgba(15,23,42,.32);box-shadow:0 18px 40px rgba(15,23,42,.12)}
+  .f2e-pricing__title{font-size:20px;font-weight:700;line-height:1.2;color:#fff}
+  .f2e-pricing__price{font-size:40px;font-weight:800;line-height:1;color:#f8fafc}
+  .f2e-pricing__subtitle{color:#94a3b8;font-size:14px;line-height:1.5}
+  .f2e-pricing__features{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none;color:#cbd5e1;font-size:15px;line-height:1.5}
+  .f2e-pricing__features li::before{content:'•';margin-right:10px;color:#f24e1e}
+  .f2e-pricing__button{margin-top:6px;border:0;border-radius:var(--f2e-btn-radius);background:var(--f2e-btn-bg);color:var(--f2e-btn-color);padding:13px 18px;font-size:15px;font-weight:700;line-height:1.1;cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+  .f2e-pricing__button:hover{background:var(--f2e-btn-bg-hover);transform:translateY(-2px)}
+</style>`;
+
+  return createHtmlWidgetNode(node.name || "Pricing Table", html, helpers);
+}
+
 function buildTabsHtml(node, items, helpers) {
   const tabsId = `f2e-tabs-${helpers.nextId(node.name || "tabs")}`;
   const tabsMarkup = items
@@ -1953,6 +2114,29 @@ function mapDecorativeShape(node, helpers) {
 
 function mapFrameNode(node, helpers, depth) {
   const explicitWidget = getWidgetHint(node);
+
+  if (explicitWidget === "video") {
+    return mapVideoNode(node, helpers);
+  }
+
+  if (explicitWidget === "google-maps") {
+    return mapGoogleMapsNode(node, helpers);
+  }
+
+  if (explicitWidget === "icon-list") {
+    const iconList = mapIconListNode(node, helpers);
+    if (iconList) {
+      return iconList;
+    }
+  }
+
+  if (explicitWidget === "testimonial" || hasRole(node, "testimonial")) {
+    return mapTestimonialNode(node, helpers);
+  }
+
+  if (explicitWidget === "pricing-table" || hasRole(node, "pricing-table")) {
+    return mapPricingTableNode(node, helpers);
+  }
 
   if (explicitWidget === "form" || hasRole(node, "form")) {
     const form = mapFormNode(node, helpers);
