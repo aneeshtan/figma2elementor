@@ -15,8 +15,19 @@
 
             @if (session('plain_text_api_key'))
                 <div class="mb-6 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-4 text-sm text-orange-900 dark:border-orange-900/60 dark:bg-orange-950/40 dark:text-orange-100">
-                    <p class="font-semibold">Copy this API key now. It will not be shown again.</p>
-                    <code class="mt-2 block overflow-x-auto rounded-xl bg-white/80 px-3 py-2 text-xs dark:bg-slate-900/80">{{ session('plain_text_api_key') }}</code>
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <p class="font-semibold">Copy this API key now. It is also available from your active key list below.</p>
+                            <code class="mt-2 block overflow-x-auto rounded-xl bg-white/80 px-3 py-2 text-xs dark:bg-slate-900/80">{{ session('plain_text_api_key') }}</code>
+                        </div>
+                        <button
+                            type="button"
+                            data-copy-value="{{ session('plain_text_api_key') }}"
+                            class="inline-flex items-center justify-center rounded-xl bg-orange-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-orange-600"
+                        >
+                            Copy key
+                        </button>
+                    </div>
                 </div>
             @endif
 
@@ -88,14 +99,28 @@
                 <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                     <p class="text-sm uppercase tracking-[0.2em] text-orange-500">API Keys</p>
                     <h3 class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">Plugin access</h3>
+                    <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                        {{ $activeApiKeyCount }}/2 active keys in use.
+                        Revoke an active key before creating a third.
+                    </p>
                     <form method="POST" action="{{ route('api-keys.store') }}" class="mt-5 space-y-3">
                         @csrf
                         <div>
                             <label for="name" class="block text-sm font-medium text-slate-700 dark:text-slate-300">Key name</label>
-                            <input id="name" name="name" type="text" required placeholder="Production plugin key" class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-orange-900" />
+                            <input id="name" name="name" type="text" required placeholder="Production plugin key" value="{{ old('name') }}" class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-orange-900" />
                         </div>
-                        <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600">
-                            Create API key
+                        @error('name')
+                            <p class="text-sm text-rose-600 dark:text-rose-400">{{ $message }}</p>
+                        @enderror
+                        @error('api_keys')
+                            <p class="text-sm text-rose-600 dark:text-rose-400">{{ $message }}</p>
+                        @enderror
+                        <button
+                            type="submit"
+                            @disabled($activeApiKeyCount >= 2)
+                            class="inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition {{ $activeApiKeyCount >= 2 ? 'cursor-not-allowed bg-slate-400 dark:bg-slate-600' : 'bg-orange-500 hover:bg-orange-600' }}"
+                        >
+                            {{ $activeApiKeyCount >= 2 ? 'Two active keys already in use' : 'Create API key' }}
                         </button>
                     </form>
 
@@ -112,16 +137,34 @@
                                                 · last used {{ $apiKey->last_used_at->diffForHumans() }}
                                             @endif
                                         </div>
+                                        <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                            @if ($apiKey->plain_text_key)
+                                                Full key is available to copy from this dashboard.
+                                            @else
+                                                Legacy key cannot be copied because the original secret was never stored.
+                                            @endif
+                                        </div>
                                     </div>
-                                    @if (! $apiKey->revoked_at)
-                                        <form method="POST" action="{{ route('api-keys.destroy', $apiKey) }}">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400">
-                                                Revoke
+                                    <div class="flex flex-col items-end gap-2">
+                                        @if ($apiKey->plain_text_key)
+                                            <button
+                                                type="button"
+                                                data-copy-value="{{ $apiKey->plain_text_key }}"
+                                                class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 dark:border-slate-600 dark:text-slate-200"
+                                            >
+                                                Copy key
                                             </button>
-                                        </form>
-                                    @endif
+                                        @endif
+                                        @if (! $apiKey->revoked_at)
+                                            <form method="POST" action="{{ route('api-keys.destroy', $apiKey) }}">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400">
+                                                    Revoke
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         @empty
@@ -201,4 +244,28 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.querySelectorAll('[data-copy-value]').forEach(function (button) {
+            button.addEventListener('click', async function () {
+                const value = button.getAttribute('data-copy-value');
+                const originalText = button.textContent.trim();
+
+                if (! value) {
+                    return;
+                }
+
+                try {
+                    await navigator.clipboard.writeText(value);
+                    button.textContent = 'Copied';
+                } catch (error) {
+                    button.textContent = 'Copy failed';
+                }
+
+                window.setTimeout(function () {
+                    button.textContent = originalText;
+                }, 1600);
+            });
+        });
+    </script>
 </x-app-layout>

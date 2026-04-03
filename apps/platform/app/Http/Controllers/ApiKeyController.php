@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ApiKeyController extends Controller
 {
@@ -14,12 +15,24 @@ class ApiKeyController extends Controller
             'name' => ['required', 'string', 'max:80'],
         ]);
 
+        $activeKeyCount = $request->user()
+            ->apiKeys()
+            ->whereNull('revoked_at')
+            ->count();
+
+        if ($activeKeyCount >= 2) {
+            throw ValidationException::withMessages([
+                'api_keys' => 'You can only keep two active API keys at a time. Revoke one before creating another.',
+            ]);
+        }
+
         $plainTextKey = 'f2e_live_'.Str::lower(Str::random(40));
 
         $request->user()->apiKeys()->create([
             'name' => $validated['name'],
             'key_prefix' => substr($plainTextKey, 0, 12),
             'key_hash' => hash('sha256', $plainTextKey),
+            'plain_text_key' => $plainTextKey,
         ]);
 
         return redirect()

@@ -26,6 +26,7 @@ class DashboardController extends Controller
             'currentPlanKey' => $currentPlanKey,
             'subscription' => $subscription,
             'apiKeys' => $user->apiKeys()->latest()->get(),
+            'activeApiKeyCount' => $user->apiKeys()->whereNull('revoked_at')->count(),
             'jobs' => $user->conversionJobs()->latest()->limit(10)->get(),
             'pluginEndpoint' => route('api.convert'),
             'monthlyUsage' => $user->conversionJobs()

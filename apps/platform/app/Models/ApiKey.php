@@ -15,6 +15,7 @@ class ApiKey extends Model
         'name',
         'key_prefix',
         'key_hash',
+        'plain_text_key',
         'last_used_at',
         'revoked_at',
     ];
@@ -26,9 +27,15 @@ class ApiKey extends Model
     protected function casts(): array
     {
         return [
+            'plain_text_key' => 'encrypted',
             'last_used_at' => 'datetime',
             'revoked_at' => 'datetime',
         ];
+    }
+
+    public function isActive(): bool
+    {
+        return $this->revoked_at === null;
     }
 
     public function user(): BelongsTo
