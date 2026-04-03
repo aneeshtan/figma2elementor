@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -28,12 +29,17 @@ class ApiKeyController extends Controller
 
         $plainTextKey = 'f2e_live_'.Str::lower(Str::random(40));
 
-        $request->user()->apiKeys()->create([
+        $attributes = [
             'name' => $validated['name'],
             'key_prefix' => substr($plainTextKey, 0, 12),
             'key_hash' => hash('sha256', $plainTextKey),
-            'plain_text_key' => $plainTextKey,
-        ]);
+        ];
+
+        if (Schema::hasColumn('api_keys', 'plain_text_key')) {
+            $attributes['plain_text_key'] = $plainTextKey;
+        }
+
+        $request->user()->apiKeys()->create($attributes);
 
         return redirect()
             ->route('dashboard')

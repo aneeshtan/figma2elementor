@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\ApiKey;
 use App\Models\User;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class ApiKeyManagementTest extends TestCase
@@ -28,6 +30,30 @@ class ApiKeyManagementTest extends TestCase
         $this->assertNotNull($apiKey->plain_text_key);
         $this->assertStringStartsWith('f2e_live_', $apiKey->plain_text_key);
         $this->assertSame(hash('sha256', $apiKey->plain_text_key), $apiKey->key_hash);
+    }
+
+    public function test_user_can_create_an_api_key_even_if_plain_text_storage_column_is_missing(): void
+    {
+        Schema::table('api_keys', function (Blueprint $table): void {
+            $table->dropColumn('plain_text_key');
+        });
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->post('/api-keys', [
+            'name' => 'Compatibility key',
+        ]);
+
+        $response
+            ->assertRedirect(route('dashboard', absolute: false))
+            ->assertSessionHas('plain_text_api_key');
+
+        $plainTextKey = $response->getSession()->get('plain_text_api_key');
+        $apiKey = ApiKey::query()->sole();
+
+        $this->assertSame('Compatibility key', $apiKey->name);
+        $this->assertIsString($plainTextKey);
+        $this->assertSame(hash('sha256', $plainTextKey), $apiKey->key_hash);
     }
 
     public function test_user_cannot_create_more_than_two_active_api_keys(): void
