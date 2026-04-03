@@ -1302,6 +1302,185 @@ function getDirectItemChildren(node) {
   return (node.children || []).filter((child) => child.visible !== false && (hasRole(child, "item") || getWidgetHint(child) === "accordion-item"));
 }
 
+function getVisibleSceneChildren(node) {
+  return (node.children || []).filter((child) => child.visible !== false && ["FRAME", "GROUP", "COMPONENT", "INSTANCE", "RECTANGLE", "ELLIPSE"].includes(child.type));
+}
+
+function findCardSurfaceNode(node) {
+  const fillNode = [node, ...collectDescendants(node)]
+    .filter((child) => child.visible !== false)
+    .filter((child) => ["FRAME", "RECTANGLE", "GROUP", "COMPONENT", "INSTANCE"].includes(child.type))
+    .filter((child) => !child.imageUrl && firstSolidFill(child)?.color)
+    .sort((left, right) => getArea(right) - getArea(left))[0];
+
+  return fillNode || node;
+}
+
+function extractCardTextParts(node) {
+  const texts = extractFieldTextNodes(node).map((textNode) => textNode.characters.trim()).filter(Boolean);
+  const title = texts[0] || stripHtmlPrefix(node.name || "Card");
+  const body = texts[1] || "";
+  const meta = texts.slice(2).join(" · ");
+  return {
+    texts,
+    title,
+    body,
+    meta
+  };
+}
+
+function mapFeatureGridNode(node, helpers) {
+  const cardNodes = getVisibleSceneChildren(node).filter((child) => hasRole(child, "card", "slide") || hasChildren(child));
+  const cards = cardNodes
+    .map((child) => {
+      const descendants = collectDescendants(child);
+      const imageNode = descendants.filter((descendant) => isImageLikeNode(descendant)).sort((left, right) => getArea(right) - getArea(left))[0] || null;
+      const iconNode = descendants.find((descendant) => getWidgetHint(descendant) === "icon" || hasRole(descendant, "icon")) || null;
+      const button = extractButtonData(child);
+      const textParts = extractCardTextParts(child);
+      const surfaceNode = findCardSurfaceNode(child);
+      const fill = firstSolidFill(surfaceNode);
+      return {
+        title: stripHtmlPrefix(textParts.title),
+        body: textParts.body,
+        imageUrl: imageNode?.imageUrl || "",
+        icon: iconNode ? mapIconNameToLibrary(getIconName(iconNode) || getElementorLabel(iconNode, "star")).value : "",
+        backgroundColor: normalizeColor(fill?.color) || "#132033",
+        radius: Number(surfaceNode.cornerRadius || child.cornerRadius || 24),
+        button
+      };
+    })
+    .filter((card) => card.title);
+
+  if (!cards.length) {
+    return null;
+  }
+
+  const heading = extractFieldTextNodes(node).map((textNode) => textNode.characters.trim()).filter(Boolean)[0] || "";
+  const html = `
+<section class="f2e-feature-grid">
+  ${heading ? `<div class="f2e-feature-grid__heading">${escapeHtml(stripHtmlPrefix(heading))}</div>` : ""}
+  <div class="f2e-feature-grid__list">
+    ${cards
+      .map(
+        (card) => `
+          <article class="f2e-feature-card" style="--f2e-card-bg:${escapeAttribute(card.backgroundColor)};--f2e-card-radius:${card.radius}px;">
+            ${
+              card.imageUrl
+                ? `<img class="f2e-feature-card__media" src="${escapeAttribute(card.imageUrl)}" alt="${escapeAttribute(card.title)}" />`
+                : card.icon
+                  ? `<div class="f2e-feature-card__icon"><i class="${escapeAttribute(card.icon)}" aria-hidden="true"></i></div>`
+                  : ""
+            }
+            <div class="f2e-feature-card__body">
+              <h3>${escapeHtml(card.title)}</h3>
+              ${card.body ? `<p>${escapeHtml(card.body)}</p>` : ""}
+              ${
+                card.button
+                  ? `<button class="f2e-feature-card__button" type="button" style="--f2e-btn-bg:${escapeAttribute(card.button.backgroundColor)};--f2e-btn-bg-hover:${escapeAttribute(card.button.hoverBackgroundColor)};--f2e-btn-color:${escapeAttribute(card.button.textColor)};--f2e-btn-radius:${Number(card.button.radius || 10)}px;">${escapeHtml(card.button.text)}</button>`
+                  : ""
+              }
+            </div>
+          </article>`
+      )
+      .join("")}
+  </div>
+</section>
+<style>
+  .f2e-feature-grid{display:flex;flex-direction:column;gap:22px;width:100%}
+  .f2e-feature-grid__heading{font-size:clamp(28px,2vw,40px);font-weight:800;line-height:1.1;color:#f8fafc}
+  .f2e-feature-grid__list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px}
+  .f2e-feature-card{display:flex;flex-direction:column;min-height:100%;overflow:hidden;border-radius:var(--f2e-card-radius);background:var(--f2e-card-bg);border:1px solid rgba(148,163,184,.14);box-shadow:0 18px 44px rgba(15,23,42,.14);transition:transform .24s ease,box-shadow .24s ease}
+  .f2e-feature-card:hover{transform:translateY(-6px);box-shadow:0 24px 56px rgba(15,23,42,.18)}
+  .f2e-feature-card__media{display:block;width:100%;aspect-ratio:16/10;object-fit:cover}
+  .f2e-feature-card__icon{display:flex;align-items:center;justify-content:center;width:64px;height:64px;margin:24px 24px 0;border-radius:18px;background:rgba(242,78,30,.14);color:#f24e1e;font-size:24px}
+  .f2e-feature-card__body{display:flex;flex:1 1 auto;flex-direction:column;gap:12px;padding:24px}
+  .f2e-feature-card__body h3{margin:0;font-size:22px;font-weight:700;line-height:1.2;color:#fff}
+  .f2e-feature-card__body p{margin:0;color:#cbd5e1;font-size:15px;line-height:1.7}
+  .f2e-feature-card__button{margin-top:auto;align-self:flex-start;border:0;border-radius:var(--f2e-btn-radius);background:var(--f2e-btn-bg);color:var(--f2e-btn-color);padding:13px 18px;font-size:15px;font-weight:700;line-height:1.1;cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+  .f2e-feature-card__button:hover{background:var(--f2e-btn-bg-hover);transform:translateY(-2px)}
+</style>`;
+
+  return createHtmlWidgetNode(node.name || "Feature Grid", html, helpers);
+}
+
+function mapStatsNode(node, helpers) {
+  const itemNodes = getVisibleSceneChildren(node).filter((child) => hasRole(child, "stat") || getWidgetHint(child) === "stat-item" || hasChildren(child));
+  const items = itemNodes
+    .map((child) => {
+      const texts = extractFieldTextNodes(child).map((textNode) => textNode.characters.trim()).filter(Boolean);
+      const value = texts.find((text) => /\d/.test(text)) || texts[0] || "";
+      const label = texts.find((text) => text !== value) || "";
+      const detail = texts.find((text, index) => index > 1 && text !== label && text !== value) || "";
+      const surfaceNode = findCardSurfaceNode(child);
+      const fill = firstSolidFill(surfaceNode);
+      return {
+        value,
+        label,
+        detail,
+        backgroundColor: normalizeColor(fill?.color) || "#111827",
+        radius: Number(surfaceNode.cornerRadius || child.cornerRadius || 22)
+      };
+    })
+    .filter((item) => item.value || item.label);
+
+  if (!items.length) {
+    return null;
+  }
+
+  const html = `
+<section class="f2e-stats-grid">
+  ${items
+    .map(
+      (item) => `
+        <article class="f2e-stat-card" style="--f2e-stat-bg:${escapeAttribute(item.backgroundColor)};--f2e-stat-radius:${item.radius}px;">
+          ${item.value ? `<div class="f2e-stat-card__value">${escapeHtml(item.value)}</div>` : ""}
+          ${item.label ? `<div class="f2e-stat-card__label">${escapeHtml(item.label)}</div>` : ""}
+          ${item.detail ? `<div class="f2e-stat-card__detail">${escapeHtml(item.detail)}</div>` : ""}
+        </article>`
+    )
+    .join("")}
+</section>
+<style>
+  .f2e-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px;width:100%}
+  .f2e-stat-card{display:flex;flex-direction:column;gap:8px;padding:24px;border-radius:var(--f2e-stat-radius);background:var(--f2e-stat-bg);border:1px solid rgba(148,163,184,.14);box-shadow:0 14px 36px rgba(15,23,42,.12)}
+  .f2e-stat-card__value{font-size:clamp(34px,3vw,48px);font-weight:800;line-height:1;color:#fff}
+  .f2e-stat-card__label{font-size:15px;font-weight:700;line-height:1.4;color:#e2e8f0}
+  .f2e-stat-card__detail{font-size:14px;line-height:1.6;color:#94a3b8}
+</style>`;
+
+  return createHtmlWidgetNode(node.name || "Stats", html, helpers);
+}
+
+function mapLogoGridNode(node, helpers) {
+  const imageNodes = getVisibleSceneChildren(node)
+    .flatMap((child) => (isImageLikeNode(child) ? [child] : collectDescendants(child).filter((descendant) => isImageLikeNode(descendant))))
+    .filter((child, index, array) => child?.imageUrl && array.findIndex((candidate) => candidate.imageUrl === child.imageUrl) === index);
+
+  if (!imageNodes.length) {
+    return null;
+  }
+
+  const html = `
+<section class="f2e-logo-grid">
+  ${imageNodes
+    .map(
+      (imageNode, index) => `
+        <div class="f2e-logo-grid__item">
+          <img src="${escapeAttribute(imageNode.imageUrl)}" alt="${escapeAttribute(stripHtmlPrefix(imageNode.name || `Logo ${index + 1}`))}" />
+        </div>`
+    )
+    .join("")}
+</section>
+<style>
+  .f2e-logo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:18px;align-items:stretch;width:100%}
+  .f2e-logo-grid__item{display:flex;align-items:center;justify-content:center;min-height:92px;padding:18px;border-radius:20px;background:rgba(15,23,42,.22);border:1px solid rgba(148,163,184,.14)}
+  .f2e-logo-grid__item img{display:block;max-width:100%;max-height:42px;object-fit:contain;filter:grayscale(100%);opacity:.92}
+</style>`;
+
+  return createHtmlWidgetNode(node.name || "Logo Grid", html, helpers);
+}
+
 function mapIconListNode(node, helpers) {
   const itemNodes = getDirectItemChildren(node);
   const items = itemNodes
@@ -1398,6 +1577,30 @@ function mapPricingTableNode(node, helpers) {
 </style>`;
 
   return createHtmlWidgetNode(node.name || "Pricing Table", html, helpers);
+}
+
+function mapExplicitFrameWidget(node, helpers) {
+  const explicitWidget = getWidgetHint(node);
+  const registry = {
+    video: mapVideoNode,
+    "google-maps": mapGoogleMapsNode,
+    "icon-list": mapIconListNode,
+    "feature-grid": mapFeatureGridNode,
+    stats: mapStatsNode,
+    "logo-grid": mapLogoGridNode,
+    testimonial: mapTestimonialNode,
+    "pricing-table": mapPricingTableNode,
+    form: mapFormNode,
+    tabs: mapTabsNode,
+    accordion: mapAccordionNode
+  };
+
+  const mapper = explicitWidget ? registry[explicitWidget] : null;
+  if (!mapper) {
+    return null;
+  }
+
+  return mapper(node, helpers);
 }
 
 function buildTabsHtml(node, items, helpers) {
@@ -2115,44 +2318,55 @@ function mapDecorativeShape(node, helpers) {
 function mapFrameNode(node, helpers, depth) {
   const explicitWidget = getWidgetHint(node);
 
-  if (explicitWidget === "video") {
-    return mapVideoNode(node, helpers);
+  const explicitWidgetNode = mapExplicitFrameWidget(node, helpers);
+  if (explicitWidgetNode) {
+    return explicitWidgetNode;
   }
 
-  if (explicitWidget === "google-maps") {
-    return mapGoogleMapsNode(node, helpers);
-  }
-
-  if (explicitWidget === "icon-list") {
-    const iconList = mapIconListNode(node, helpers);
-    if (iconList) {
-      return iconList;
+  if (hasRole(node, "feature-grid")) {
+    const featureGrid = mapFeatureGridNode(node, helpers);
+    if (featureGrid) {
+      return featureGrid;
     }
   }
 
-  if (explicitWidget === "testimonial" || hasRole(node, "testimonial")) {
+  if (hasRole(node, "stats")) {
+    const stats = mapStatsNode(node, helpers);
+    if (stats) {
+      return stats;
+    }
+  }
+
+  if (hasRole(node, "logo-grid")) {
+    const logoGrid = mapLogoGridNode(node, helpers);
+    if (logoGrid) {
+      return logoGrid;
+    }
+  }
+
+  if (hasRole(node, "testimonial")) {
     return mapTestimonialNode(node, helpers);
   }
 
-  if (explicitWidget === "pricing-table" || hasRole(node, "pricing-table")) {
+  if (hasRole(node, "pricing-table")) {
     return mapPricingTableNode(node, helpers);
   }
 
-  if (explicitWidget === "form" || hasRole(node, "form")) {
+  if (hasRole(node, "form")) {
     const form = mapFormNode(node, helpers);
     if (form) {
       return form;
     }
   }
 
-  if (explicitWidget === "tabs" || hasRole(node, "tabs")) {
+  if (hasRole(node, "tabs")) {
     const tabs = mapTabsNode(node, helpers);
     if (tabs) {
       return tabs;
     }
   }
 
-  if (explicitWidget === "accordion" || hasRole(node, "accordion")) {
+  if (hasRole(node, "accordion")) {
     const accordion = mapAccordionNode(node, helpers);
     if (accordion) {
       return accordion;

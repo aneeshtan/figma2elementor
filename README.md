@@ -139,6 +139,26 @@ The Figma plugin also exports component variant metadata and prototype reactions
 
 Use `el-*` names when you want strict widget mapping. Use semantic roles and motion tokens when you want higher-fidelity interactive sections like sliders and hover-aware cards.
 
+Strict widget names currently supported:
+
+- `el-container:name`
+- `el-heading:name`
+- `el-text-editor:name`
+- `el-image:name`
+- `el-button:name`
+- `el-video:https://...`
+- `el-google-maps:address`
+- `el-form:name` with `el-input:*`, `el-email:*`, `el-tel:*`, `el-select:*`, `el-textarea:*`, `el-submit:*`
+- `el-icon:[name]`
+- `el-icon-list:name` with `el-item:label`
+- `el-feature-grid:name` with feature-card children
+- `el-stats:name` with `el-stat:label` children
+- `el-logo-grid:name`
+- `el-testimonial:name`
+- `el-pricing-table:name`
+- `el-tabs:name` with `el-tab:title`
+- `el-accordion:name` with `el-item:title`
+
 Still not implemented yet:
 
 - teams and seat-based billing

@@ -347,6 +347,28 @@ function parseElementorHint(name) {
     widgetHint = "icon-list";
     role = "list";
   }
+  if (type === "feature-grid" || type === "features") {
+    widgetHint = "feature-grid";
+    role = "feature-grid";
+  }
+  if (type === "feature-card") {
+    role = "card";
+  }
+  if (type === "stats" || type === "stat-grid") {
+    widgetHint = "stats";
+    role = "stats";
+  }
+  if (type === "stat") {
+    widgetHint = "stat-item";
+    role = "stat";
+  }
+  if (type === "logo-grid" || type === "logos") {
+    widgetHint = "logo-grid";
+    role = "logo-grid";
+  }
+  if (type === "logo") {
+    role = "logo";
+  }
   if (type === "testimonial") {
     widgetHint = "testimonial";
     role = "testimonial";
@@ -385,7 +407,7 @@ function inferSemanticRole(name) {
     return elementorHint.role;
   }
 
-  const explicitMatches = normalizedName.match(/\[(slider|carousel|slide|track|dots|dot|button|card|hover-target|prev|next|media|content|tabs|tab|accordion|item|icon)\]/g);
+  const explicitMatches = normalizedName.match(/\[(slider|carousel|slide|track|dots|dot|button|card|hover-target|prev|next|media|content|tabs|tab|accordion|item|icon|testimonial|pricing-table|feature-grid|stats|stat|logo-grid|logo)\]/g);
 
   if (explicitMatches && explicitMatches.length) {
     return explicitMatches[0].replace(/[\[\]]/g, "");
@@ -398,6 +420,12 @@ function inferSemanticRole(name) {
   if (normalizedName === "dot" || normalizedName.includes(" dot ")) return "dot";
   if (normalizedName.includes("button") || normalizedName.includes("cta")) return "button";
   if (normalizedName.includes("card")) return "card";
+  if (normalizedName.includes("feature-grid") || normalizedName.includes("features")) return "feature-grid";
+  if (normalizedName.includes("pricing-table") || normalizedName.includes("price-table")) return "pricing-table";
+  if (normalizedName.includes("testimonial")) return "testimonial";
+  if (normalizedName.includes("stat")) return "stat";
+  if (normalizedName.includes("logo-grid") || normalizedName.includes("logos")) return "logo-grid";
+  if (normalizedName.includes("logo")) return "logo";
   if (normalizedName.includes("tabs")) return "tabs";
   if (normalizedName.includes("accordion")) return "accordion";
   if (normalizedName.includes("tab")) return "tab";
