@@ -118,6 +118,20 @@ Current platform capabilities:
 - public proxy routes for `/api/convert` and `/api/assets/*`
 - Laravel landing page and dashboard as the primary user-facing app
 
+## Figma export contract
+
+For higher-fidelity exports, the plugin and converter now understand a small naming contract:
+
+- `[slider]` or `[carousel]` on the root slider frame
+- `[track]` on the slide track wrapper
+- `[slide]` or `[card]` on each repeated slide card
+- `[dots]` on pagination wrapper and `[dot]` on each pagination item
+- `[button]` on CTA groups or components
+- `[media]` on image/media regions and `[content]` on text/content regions
+- motion tokens in names such as `motion:autoplay`, `motion:grow`, `motion:lift`, `motion:fade-up`
+
+The Figma plugin also exports component variant metadata and prototype reactions. When a button or card is backed by a component set with `Default` and `Hover` variants, the converter now uses that hover state instead of guessing hover colors.
+
 Still not implemented yet:
 
 - teams and seat-based billing

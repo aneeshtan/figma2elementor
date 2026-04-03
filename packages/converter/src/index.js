@@ -42,14 +42,26 @@ function box(top = 0, right = 0, bottom = 0, left = 0) {
 }
 
 function firstSolidFill(node) {
+  if (!node) {
+    return null;
+  }
+
   return (node.fills || []).find((fill) => fill && fill.type === "SOLID" && fill.color);
 }
 
 function firstStroke(node) {
+  if (!node) {
+    return null;
+  }
+
   return (node.strokes || []).find((stroke) => stroke && stroke.type === "SOLID" && stroke.color);
 }
 
 function firstShadow(node) {
+  if (!node) {
+    return null;
+  }
+
   return (node.effects || []).find(
     (effect) => effect && ["DROP_SHADOW", "INNER_SHADOW"].includes(effect.type) && effect.color
   );
@@ -57,6 +69,215 @@ function firstShadow(node) {
 
 function hasChildren(node) {
   return Array.isArray(node.children) && node.children.length > 0;
+}
+
+function getSemantics(node) {
+  return node && node.semantics && typeof node.semantics === "object" ? node.semantics : {};
+}
+
+function getNodeRole(node) {
+  const semantics = getSemantics(node);
+  return typeof semantics.role === "string" && semantics.role ? semantics.role : null;
+}
+
+function hasRole(node, ...roles) {
+  const role = getNodeRole(node);
+  return !!role && roles.includes(role);
+}
+
+function normalizeStateToken(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+
+  if (normalized.includes("hover")) return "hover";
+  if (normalized.includes("default") || normalized.includes("rest") || normalized.includes("idle")) return "default";
+  if (normalized.includes("active") || normalized.includes("pressed")) return "active";
+  if (normalized.includes("focus")) return "focus";
+  if (normalized.includes("selected")) return "selected";
+  return normalized;
+}
+
+function getNodeState(node) {
+  const semantics = getSemantics(node);
+  if (typeof semantics.state === "string" && semantics.state) {
+    return normalizeStateToken(semantics.state);
+  }
+
+  if (node && node.variantProperties && typeof node.variantProperties === "object") {
+    const values = Object.values(node.variantProperties);
+
+    for (let index = 0; index < values.length; index += 1) {
+      const normalized = normalizeStateToken(values[index]);
+      if (normalized) {
+        return normalized;
+      }
+    }
+  }
+
+  return null;
+}
+
+function getMotionTokens(node) {
+  const semantics = getSemantics(node);
+  return Array.isArray(semantics.motionTokens) ? semantics.motionTokens : [];
+}
+
+function hasHoverReaction(node) {
+  if (!node || !Array.isArray(node.reactions)) {
+    return false;
+  }
+
+  return node.reactions.some((reaction) => reaction && reaction.trigger === "ON_HOVER");
+}
+
+function getInteractiveVariants(node) {
+  const variants = node && node.component && node.component.interactiveVariants;
+  return variants && Array.isArray(variants.variants) ? variants.variants : [];
+}
+
+function getVariantState(variant) {
+  if (!variant || typeof variant !== "object") {
+    return null;
+  }
+
+  if (typeof variant.state === "string" && variant.state) {
+    return normalizeStateToken(variant.state);
+  }
+
+  if (variant.variantProperties && typeof variant.variantProperties === "object") {
+    const values = Object.values(variant.variantProperties);
+    for (let index = 0; index < values.length; index += 1) {
+      const normalized = normalizeStateToken(values[index]);
+      if (normalized) {
+        return normalized;
+      }
+    }
+  }
+
+  return null;
+}
+
+function findVariantByStates(variants, desiredStates) {
+  return variants.find((variant) => desiredStates.includes(getVariantState(variant))) || null;
+}
+
+function getVariantFillColor(variant) {
+  const fills = variant && variant.summary && Array.isArray(variant.summary.fills) ? variant.summary.fills : [];
+  const solidFill = fills.find((fill) => fill && fill.type === "SOLID" && fill.color);
+  return solidFill ? normalizeColor(solidFill.color) : undefined;
+}
+
+function getVariantTextColor(variant) {
+  const fills =
+    variant && variant.summary && variant.summary.text && Array.isArray(variant.summary.text.fills)
+      ? variant.summary.text.fills
+      : [];
+  const solidFill = fills.find((fill) => fill && fill.type === "SOLID" && fill.color);
+  return solidFill ? normalizeColor(solidFill.color) : undefined;
+}
+
+function getVariantBorderColor(variant) {
+  const strokes = variant && variant.summary && Array.isArray(variant.summary.strokes) ? variant.summary.strokes : [];
+  const solidStroke = strokes.find((stroke) => stroke && stroke.type === "SOLID" && stroke.color);
+  return solidStroke ? normalizeColor(solidStroke.color) : undefined;
+}
+
+function getVariantShadow(variant) {
+  const effects = variant && variant.summary && Array.isArray(variant.summary.effects) ? variant.summary.effects : [];
+  return effects.find((effect) => effect && ["DROP_SHADOW", "INNER_SHADOW"].includes(effect.type) && effect.color) || null;
+}
+
+function getMotionPreset(node, fallback = null) {
+  const motionTokens = getMotionTokens(node);
+
+  if (motionTokens.includes("lift")) return "float";
+  if (motionTokens.includes("grow")) return "grow";
+  if (motionTokens.includes("zoom-in")) return "grow";
+  if (motionTokens.includes("fade-up") || motionTokens.includes("slide-up")) return "float";
+  if (hasHoverReaction(node)) return fallback || "grow";
+  return fallback;
+}
+
+function hasAutoPlayMotion(node) {
+  const motionTokens = getMotionTokens(node);
+  if (motionTokens.includes("autoplay")) {
+    return true;
+  }
+
+  if (!node || !Array.isArray(node.reactions)) {
+    return false;
+  }
+
+  return node.reactions.some((reaction) => reaction && reaction.trigger === "AFTER_TIMEOUT");
+}
+
+function applyInteractiveHover(settings, node, kind) {
+  const variants = getInteractiveVariants(node);
+  if (!variants.length) {
+    if (kind === "button") {
+      const motion = getMotionPreset(node, settings.hover_animation || "grow");
+      if (motion) {
+        settings.hover_animation = motion;
+      }
+    }
+    return;
+  }
+
+  const hoverVariant = findVariantByStates(variants, ["hover", "active", "focus", "selected"]);
+  if (!hoverVariant) {
+    return;
+  }
+
+  if (kind === "button") {
+    const hoverFill = getVariantFillColor(hoverVariant);
+    const hoverText = getVariantTextColor(hoverVariant);
+
+    if (hoverFill) {
+      settings.background_hover_color = hoverFill;
+    }
+
+    if (hoverText) {
+      settings.button_hover_color = hoverText;
+    }
+
+    const motion = getMotionPreset(node, settings.hover_animation || "grow");
+    if (motion) {
+      settings.hover_animation = motion;
+    }
+
+    return;
+  }
+
+  const hoverFill = getVariantFillColor(hoverVariant);
+  const hoverBorder = getVariantBorderColor(hoverVariant);
+  const hoverShadow = getVariantShadow(hoverVariant);
+
+  if (hoverFill) {
+    settings.background_hover_background = "classic";
+    settings.background_hover_color = hoverFill;
+  }
+
+  if (hoverBorder) {
+    settings.border_hover_color = hoverBorder;
+  }
+
+  if (hoverShadow) {
+    settings.box_shadow_box_shadow_type = "yes";
+    settings.box_shadow_box_shadow = {
+      horizontal: Math.round(hoverShadow.offset?.x || 0),
+      vertical: Math.round(hoverShadow.offset?.y || 0),
+      blur: Math.round(hoverShadow.radius || 0),
+      spread: Math.round(hoverShadow.spread || 0),
+      color: normalizeColor(hoverShadow.color),
+      position: hoverShadow.type === "INNER_SHADOW" ? "inset" : "outline"
+    };
+  }
 }
 
 function escapeHtml(value) {
@@ -307,12 +528,20 @@ function isDotNode(node) {
 }
 
 function isLikelyDotsGroup(node) {
+  if (hasRole(node, "dots")) {
+    return true;
+  }
+
   if (!hasChildren(node)) {
     return false;
   }
 
   const visibleChildren = (node.children || []).filter((child) => child.visible !== false);
-  return visibleChildren.length >= 2 && visibleChildren.length <= 8 && visibleChildren.every((child) => isDotNode(child));
+  return (
+    visibleChildren.length >= 2 &&
+    visibleChildren.length <= 8 &&
+    visibleChildren.every((child) => hasRole(child, "dot") || isDotNode(child))
+  );
 }
 
 function getAverageDimension(nodes, key) {
@@ -343,6 +572,10 @@ function areSimilarlySized(nodes) {
 }
 
 function isLikelySlideCard(node) {
+  if (hasRole(node, "slide", "card")) {
+    return true;
+  }
+
   if (!hasChildren(node)) {
     return false;
   }
@@ -407,9 +640,45 @@ function findRepeatedCardTrack(node, viewportNode = node) {
   };
 }
 
+function findExplicitSliderPattern(node) {
+  if (!hasRole(node, "slider", "carousel")) {
+    return null;
+  }
+
+  const descendants = collectDescendants(node);
+  const visibleChildren = (node.children || []).filter((child) => child.visible !== false);
+  const headingNode = visibleChildren.find((child) => isTextNode(child) && inferTextWidget(child) === "heading") || null;
+  const dotsNode = descendants.find((child) => child !== node && (hasRole(child, "dots") || isLikelyDotsGroup(child))) || null;
+  const trackNode = descendants.find((child) => child !== node && hasRole(child, "track")) || node;
+  const cards = (trackNode.children || []).filter((child) => child.visible !== false && isLikelySlideCard(child));
+
+  if (cards.length < 2) {
+    return null;
+  }
+
+  const gap = getAverageHorizontalGap(cards);
+  const viewportWidth = getViewportWidth(trackNode, node);
+  const averageCardWidth = getAverageDimension(cards, "width");
+  const visibleSlides = Math.max(1, Math.min(3, Math.round(viewportWidth / Math.max(averageCardWidth, 1))));
+
+  return {
+    headingNode,
+    dotsNode,
+    trackNode,
+    cards,
+    gap,
+    visibleSlides
+  };
+}
+
 function findSliderPattern(node) {
   if (!hasChildren(node)) {
     return null;
+  }
+
+  const explicitPattern = findExplicitSliderPattern(node);
+  if (explicitPattern) {
+    return explicitPattern;
   }
 
   const visibleChildren = (node.children || []).filter((child) => child.visible !== false);
@@ -481,7 +750,8 @@ function pickPanelBackgroundNode(node, imageNode) {
 }
 
 function extractButtonData(node) {
-  const buttonNode = getButtonLikeNodes(node)[0];
+  const explicitButtonNode = collectDescendants(node).find((child) => hasRole(child, "button")) || null;
+  const buttonNode = explicitButtonNode || getButtonLikeNodes(node)[0];
   if (!buttonNode) {
     return null;
   }
@@ -490,18 +760,23 @@ function extractButtonData(node) {
   const fill = firstSolidFill(buttonNode);
   const textFill = textChild ? firstSolidFill(textChild) : null;
 
-  return {
+  const settings = {
     text: textChild?.characters?.trim() || "Read more",
     backgroundColor: normalizeColor(fill?.color) || "#be9f3f",
     textColor: normalizeColor(textFill?.color) || "#ffffff",
     hoverBackgroundColor: shiftColor(fill?.color || "#be9f3f", -0.12),
     radius: buttonNode.cornerRadius || 6
   };
+
+  applyInteractiveHover(settings, buttonNode, "button");
+
+  return settings;
 }
 
 function extractSlideCardData(node) {
   const descendants = collectDescendants(node);
-  const imageNode = descendants
+  const explicitMediaNode = descendants.find((child) => hasRole(child, "media") && child.imageUrl) || null;
+  const imageNode = (explicitMediaNode ? [explicitMediaNode] : descendants)
     .filter((child) => isImageLikeNode(child))
     .sort((left, right) => getArea(right) - getArea(left))[0];
 
@@ -510,7 +785,9 @@ function extractSlideCardData(node) {
   }
 
   const panelNode = pickPanelBackgroundNode(node, imageNode);
-  const textNodes = descendants
+  const contentRoot = descendants.find((child) => hasRole(child, "content")) || node;
+  const contentDescendants = collectDescendants(contentRoot, contentRoot === node);
+  const textNodes = contentDescendants
     .filter((child) => isTextNode(child))
     .sort((left, right) => {
       const sizeDelta = (right.style?.fontSize || 0) - (left.style?.fontSize || 0);
@@ -563,6 +840,7 @@ function buildSliderHtml(node, slides, options, helpers) {
   const sliderId = `f2e-slider-${helpers.nextId(node.name || "slider")}`;
   const visibleSlides = Math.max(1, Number(options.visibleSlides || 1));
   const gap = Math.max(16, Math.round(options.gap || 24));
+  const autoplay = Boolean(options.autoplay);
   const dotCount = Math.max(1, slides.length - visibleSlides + 1);
   const dots = Array.from({ length: dotCount }, (_, index) => index);
   const slideMarkup = slides
@@ -594,7 +872,7 @@ function buildSliderHtml(node, slides, options, helpers) {
     .join("");
 
   return `
-<div id="${sliderId}" class="f2e-slider" data-visible-slides="${visibleSlides}" data-gap="${gap}">
+<div id="${sliderId}" class="f2e-slider" data-visible-slides="${visibleSlides}" data-gap="${gap}" data-autoplay="${autoplay ? "true" : "false"}">
   <div class="f2e-slider__viewport">
     <div class="f2e-slider__track">
       ${slideMarkup}
@@ -657,6 +935,13 @@ function buildSliderHtml(node, slides, options, helpers) {
         setActive(Number(dot.getAttribute('data-dot-index') || 0));
       });
     });
+    if (root.getAttribute('data-autoplay') === 'true' && dots.length > 1) {
+      window.setInterval(function() {
+        var current = Number((root.querySelector('.f2e-slider__dot.is-active') || dots[0]).getAttribute('data-dot-index') || 0);
+        var next = current >= dots.length - 1 ? 0 : current + 1;
+        setActive(next);
+      }, 4200);
+    }
     window.addEventListener('resize', function() {
       setActive(Number((root.querySelector('.f2e-slider__dot.is-active') || dots[0] || { getAttribute: function() { return 0; } }).getAttribute('data-dot-index') || 0));
     });
@@ -680,7 +965,7 @@ function mapSliderSection(node, helpers, depth, sliderPattern) {
   elements.push(
     createHtmlWidgetNode(
       `${node.name || "Slider"} Carousel`,
-      buildSliderHtml(node, slideData, { visibleSlides: sliderPattern.visibleSlides, gap: sliderPattern.gap }, helpers),
+      buildSliderHtml(node, slideData, { visibleSlides: sliderPattern.visibleSlides, gap: sliderPattern.gap, autoplay: hasAutoPlayMotion(node) }, helpers),
       helpers
     )
   );
@@ -815,6 +1100,7 @@ function applyContainerSurface(settings, node) {
   applyBorder(settings, node);
   applyBorderRadius(settings, node);
   applyShadow(settings, node);
+  applyInteractiveHover(settings, node, "container");
 }
 
 function createMeasuredWrapper(child, element, helpers, depth) {
@@ -989,6 +1275,10 @@ function mapSpatialChildren(node, helpers, depth) {
 }
 
 function isButtonLikeFrame(node) {
+  if (hasRole(node, "button")) {
+    return true;
+  }
+
   if (!hasChildren(node)) {
     return false;
   }
@@ -1080,6 +1370,12 @@ function mapButtonNode(node, helpers) {
   applyBorder(settings, node);
   applyBorderRadius(settings, node);
   applyShadow(settings, node);
+  applyInteractiveHover(settings, node, "button");
+
+  const motionPreset = getMotionPreset(node, settings.hover_animation);
+  if (motionPreset) {
+    settings.hover_animation = motionPreset;
+  }
 
   return {
     id: helpers.nextId(node.name),
