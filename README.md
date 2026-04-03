@@ -10,9 +10,12 @@ This project is licensed under the MIT license for open-source use.
 
 - A Laravel app for signup, login, billing, API keys, and conversion jobs
 - A public conversion API exposed from Laravel at `/api/convert`
+- Job listing and download APIs exposed from Laravel at `/api/jobs`, `/api/jobs/{id}`, and `/api/jobs/{id}/download`
 - An internal Node conversion service that Laravel proxies to
 - A shared conversion pipeline that maps Figma-like nodes into Elementor containers and widgets
 - A Figma plugin that serializes the current selection and sends it to the Laravel API
+- A WordPress companion plugin that imports completed jobs into Elementor
+- A visual regression CLI for screenshot-based export scoring
 - A sample Figma document payload and a script that generates a demo Elementor template file
 
 ## Repository layout
@@ -33,6 +36,9 @@ This project is licensed under the MIT license for open-source use.
   - plugin controller
   - plugin UI
   - publishable icon asset
+- `apps/wordpress-plugin`
+  - WordPress Elementor importer
+  - remote job fetch and asset sideloading
 - `docs`
   - Figma plugin publishing checklist
   - Figma Community listing copy
@@ -47,6 +53,9 @@ This project is licensed under the MIT license for open-source use.
   - ignored local runtime account state and persisted conversion jobs
 - `scripts`
   - sample conversion runner
+- `regression`
+  - screenshot fixture definitions
+  - diff output folder
 
 ## Run locally
 
@@ -124,8 +133,10 @@ For higher-fidelity exports, the plugin and converter now understand a small nam
 
 - `el-container:name`, `el-button:name`, `el-heading:name`, `el-text-editor:name`, `el-image:name`, `el-divider:name`, `el-spacer:name`
 - `el-icon:[star]`, `el-tabs:name` with `el-tab:title`, `el-accordion:name` with `el-item:title`
+- `el-nav:name` with optional `el-menu:name`, `el-nav-item:label`, and CTA button
 - `el-form:name` with direct children like `el-input:name`, `el-email:email`, `el-tel:phone`, `el-select:service`, `el-textarea:message`, `el-submit:submit`
 - `el-video:https://...`, `el-google-maps:address`, `el-icon-list:name` with `el-item:label`
+- `el-feature-grid:name`, `el-stats:name` with `el-stat:label`, `el-logo-grid:name`
 - `el-testimonial:name`, `el-pricing-table:name`
 - `[slider]` or `[carousel]` on the root slider frame
 - `[track]` on the slide track wrapper
@@ -138,6 +149,48 @@ For higher-fidelity exports, the plugin and converter now understand a small nam
 The Figma plugin also exports component variant metadata and prototype reactions. When a button or card is backed by a component set with `Default` and `Hover` variants, the converter now uses that hover state instead of guessing hover colors.
 
 Use `el-*` names when you want strict widget mapping. Use semantic roles and motion tokens when you want higher-fidelity interactive sections like sliders and hover-aware cards.
+
+## WordPress plugin
+
+The WordPress companion plugin lives in:
+
+- `apps/wordpress-plugin/figma2elementor/figma2elementor.php`
+
+It can:
+
+- connect to the Laravel platform with the same API key you use in Figma
+- fetch completed jobs from `/api/jobs`
+- download exports from `/api/jobs/{id}/download`
+- sideload hosted asset URLs into the WordPress media library
+- create an `elementor_library` template automatically
+
+Setup notes are in:
+
+- [apps/wordpress-plugin/README.md](/Users/farshad.ghanzanfari/Documents/www/Figma2Element/apps/wordpress-plugin/README.md)
+
+## Visual regression scoring
+
+Install root dependencies first:
+
+```bash
+npm install
+```
+
+Run a direct screenshot comparison:
+
+```bash
+npm run regression:score -- baseline.png candidate.png --diff regression/output/diff.png
+```
+
+Run a saved fixture:
+
+```bash
+npm run regression:score -- --fixture regression/fixtures/example.fixture.json
+```
+
+Fixture format and workflow notes are in:
+
+- [regression/README.md](/Users/farshad.ghanzanfari/Documents/www/Figma2Element/regression/README.md)
 
 Strict widget names currently supported:
 

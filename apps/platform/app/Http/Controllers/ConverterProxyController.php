@@ -14,24 +14,9 @@ class ConverterProxyController extends Controller
 {
     public function convert(Request $request): JsonResponse
     {
-        $token = trim((string) $request->header('x-api-key', ''));
-        if ($token === '') {
-            return response()->json([
-                'ok' => false,
-                'error' => 'A valid API key is required.',
-            ], 401);
-        }
-
-        $apiKey = ApiKey::query()
-            ->where('key_hash', hash('sha256', $token))
-            ->whereNull('revoked_at')
-            ->first();
-
+        $apiKey = $this->resolveApiKey($request);
         if (! $apiKey) {
-            return response()->json([
-                'ok' => false,
-                'error' => 'A valid API key is required.',
-            ], 401);
+            return $this->invalidApiKeyResponse();
         }
 
         $source = $request->input('source', $request->all());
@@ -107,6 +92,99 @@ class ConverterProxyController extends Controller
         ]);
     }
 
+    public function jobs(Request $request): JsonResponse
+    {
+        $apiKey = $this->resolveApiKey($request);
+        if (! $apiKey) {
+            return $this->invalidApiKeyResponse();
+        }
+
+        $jobs = ConversionJob::query()
+            ->where('user_id', $apiKey->user_id)
+            ->latest()
+            ->limit(25)
+            ->get()
+            ->map(function (ConversionJob $job): array {
+                return [
+                    'id' => (string) $job->id,
+                    'source_name' => $job->source_name,
+                    'export_name' => $job->export_name,
+                    'status' => $job->status,
+                    'completed_at' => optional($job->completed_at)->toIso8601String(),
+                    'report' => data_get($job->meta, 'report'),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'ok' => true,
+            'jobs' => $jobs,
+        ]);
+    }
+
+    public function showJob(Request $request, ConversionJob $job): JsonResponse
+    {
+        $apiKey = $this->resolveApiKey($request);
+        if (! $apiKey) {
+            return $this->invalidApiKeyResponse();
+        }
+
+        if ((int) $job->user_id !== (int) $apiKey->user_id) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'This conversion job is not available for the supplied API key.',
+            ], 404);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'job' => [
+                'id' => (string) $job->id,
+                'source_name' => $job->source_name,
+                'export_name' => $job->export_name,
+                'status' => $job->status,
+                'completed_at' => optional($job->completed_at)->toIso8601String(),
+                'report' => data_get($job->meta, 'report'),
+                'template' => data_get($job->meta, 'template'),
+            ],
+        ]);
+    }
+
+    public function downloadJob(Request $request, ConversionJob $job): JsonResponse
+    {
+        $apiKey = $this->resolveApiKey($request);
+        if (! $apiKey) {
+            return $this->invalidApiKeyResponse();
+        }
+
+        if ((int) $job->user_id !== (int) $apiKey->user_id) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'This conversion job is not available for the supplied API key.',
+            ], 404);
+        }
+
+        $template = data_get($job->meta, 'template');
+        if (! is_array($template) || $template === []) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'This conversion job does not contain an export template.',
+            ], 404);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'job' => [
+                'id' => (string) $job->id,
+                'source_name' => $job->source_name,
+                'export_name' => $job->export_name,
+                'status' => $job->status,
+                'completed_at' => optional($job->completed_at)->toIso8601String(),
+            ],
+            'template' => $template,
+        ]);
+    }
+
     public function asset(Request $request, string $asset): StreamedResponse|JsonResponse
     {
         try {
@@ -137,5 +215,26 @@ class ConverterProxyController extends Controller
             'Content-Type' => $response->header('Content-Type', 'application/octet-stream'),
             'Cache-Control' => $response->header('Cache-Control', 'public, max-age=3600'),
         ]);
+    }
+
+    private function resolveApiKey(Request $request): ?ApiKey
+    {
+        $token = trim((string) $request->header('x-api-key', ''));
+        if ($token === '') {
+            return null;
+        }
+
+        return ApiKey::query()
+            ->where('key_hash', hash('sha256', $token))
+            ->whereNull('revoked_at')
+            ->first();
+    }
+
+    private function invalidApiKeyResponse(): JsonResponse
+    {
+        return response()->json([
+            'ok' => false,
+            'error' => 'A valid API key is required.',
+        ], 401);
     }
 }

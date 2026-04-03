@@ -1,0 +1,7 @@
+{
+  "name": "related-offerings",
+  "baseline": "regression/fixtures/baseline-related-offerings.png",
+  "candidate": "regression/fixtures/candidate-related-offerings.png",
+  "diff": "regression/output/related-offerings-diff.png",
+  "threshold": 0.1
+}
