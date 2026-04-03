@@ -145,6 +145,7 @@ For higher-fidelity exports, the plugin and converter now understand a small nam
 - `[button]` on CTA groups or components
 - `[media]` on image/media regions and `[content]` on text/content regions
 - motion tokens in names such as `motion:autoplay`, `motion:grow`, `motion:lift`, `motion:fade-up`
+- responsive tokens in names such as `hide:mobile`, `hide:tablet`, `hide:desktop`, `stack:tablet`, `stack:mobile`
 
 The Figma plugin also exports component variant metadata and prototype reactions. When a button or card is backed by a component set with `Default` and `Hover` variants, the converter now uses that hover state instead of guessing hover colors.
 

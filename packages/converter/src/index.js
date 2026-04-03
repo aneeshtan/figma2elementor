@@ -77,6 +77,16 @@ function firstShadow(node) {
   );
 }
 
+function findBlurEffect(node) {
+  if (!node) {
+    return null;
+  }
+
+  return (node.effects || []).find(
+    (effect) => effect && ["LAYER_BLUR", "BACKGROUND_BLUR"].includes(effect.type) && typeof effect.radius === "number"
+  );
+}
+
 function hasChildren(node) {
   return Array.isArray(node.children) && node.children.length > 0;
 }
@@ -169,6 +179,16 @@ function getNodeState(node) {
 function getMotionTokens(node) {
   const semantics = getSemantics(node);
   return Array.isArray(semantics.motionTokens) ? semantics.motionTokens : [];
+}
+
+function getBreakpointHints(node) {
+  const semantics = getSemantics(node);
+  const breakpoints = semantics && typeof semantics.breakpoints === "object" ? semantics.breakpoints : {};
+
+  return {
+    hiddenOn: Array.isArray(breakpoints.hiddenOn) ? breakpoints.hiddenOn : [],
+    stackOn: Array.isArray(breakpoints.stackOn) ? breakpoints.stackOn : []
+  };
 }
 
 function hasHoverReaction(node) {
@@ -464,6 +484,16 @@ function paintToCss(fill) {
   return undefined;
 }
 
+function hexOrColorToRgba(value, alphaOverride = null) {
+  const channels = getColorChannels(normalizeColor(value));
+  if (!channels) {
+    return normalizeColor(value);
+  }
+
+  const alpha = alphaOverride == null ? channels.alpha : alphaOverride;
+  return `rgba(${Math.round(channels.red)}, ${Math.round(channels.green)}, ${Math.round(channels.blue)}, ${Number(alpha.toFixed(3))})`;
+}
+
 function getCornerRadiusValues(node) {
   const values = [node?.topLeftRadius, node?.topRightRadius, node?.bottomRightRadius, node?.bottomLeftRadius];
   if (values.every((value) => typeof value === "number")) {
@@ -475,6 +505,23 @@ function getCornerRadiusValues(node) {
   }
 
   return null;
+}
+
+function getResponsiveDisplay(node) {
+  const hints = getBreakpointHints(node);
+  const display = {
+    desktop: true,
+    tablet: true,
+    mobile: true
+  };
+
+  hints.hiddenOn.forEach((breakpoint) => {
+    if (breakpoint === "desktop") display.desktop = false;
+    if (breakpoint === "tablet") display.tablet = false;
+    if (breakpoint === "mobile") display.mobile = false;
+  });
+
+  return display;
 }
 
 function normalizeFontWeightValue(value) {
@@ -2176,6 +2223,38 @@ function findOverlayBackgroundChild(node) {
   return background;
 }
 
+function findOverlayLayers(node) {
+  if (!hasChildren(node) || node.layoutMode !== "NONE") {
+    return null;
+  }
+
+  const candidates = node.children
+    .filter((child) => child.visible !== false && isShapeNode(child) && (!child.children || !child.children.length))
+    .sort((left, right) => getArea(right) - getArea(left));
+
+  if (candidates.length < 2) {
+    return null;
+  }
+
+  const base = candidates[0];
+  const overlay = candidates.find((child, index) => index > 0 && getArea(child) >= getArea(base) * 0.7 && isContainedWithin(child, base, 16));
+
+  if (!base || !overlay) {
+    return null;
+  }
+
+  const foregroundChildren = node.children.filter((child) => child !== base && child !== overlay);
+  if (!foregroundChildren.length || foregroundChildren.some((child) => !isContainedWithin(child, base))) {
+    return null;
+  }
+
+  return {
+    base,
+    overlay,
+    foregroundChildren
+  };
+}
+
 function applyTypography(settings, node) {
   if (!node.style) {
     return;
@@ -2247,6 +2326,33 @@ function applyBorderRadius(settings, node) {
   }
 }
 
+function applyBlur(settings, node) {
+  const blur = findBlurEffect(node);
+  if (!blur) {
+    return;
+  }
+
+  settings.f2e_filter_blur = Math.round(blur.radius || 0);
+  if (blur.type === "BACKGROUND_BLUR") {
+    settings.f2e_backdrop_blur = Math.round(blur.radius || 0);
+  }
+}
+
+function applyResponsiveHints(settings, node) {
+  const display = getResponsiveDisplay(node);
+  settings.hide_desktop = !display.desktop ? "yes" : "";
+  settings.hide_tablet = !display.tablet ? "yes" : "";
+  settings.hide_mobile = !display.mobile ? "yes" : "";
+
+  const breakpoints = getBreakpointHints(node);
+  if (breakpoints.stackOn.includes("tablet")) {
+    settings.flex_direction_tablet = "column";
+  }
+  if (breakpoints.stackOn.includes("mobile")) {
+    settings.flex_direction_mobile = "column";
+  }
+}
+
 function applyContainerSurface(settings, node) {
   const fill = firstBackgroundFill(node);
 
@@ -2283,6 +2389,8 @@ function applyContainerSurface(settings, node) {
   applyBorder(settings, node);
   applyBorderRadius(settings, node);
   applyShadow(settings, node);
+  applyBlur(settings, node);
+  applyResponsiveHints(settings, node);
   applyInteractiveHover(settings, node, "container");
 }
 
@@ -2356,6 +2464,82 @@ function mapOverlayGroup(node, helpers, depth, backgroundChild) {
   }
 
   applyContainerSurface(settings, backgroundChild);
+
+  return {
+    id: helpers.nextId(node.name),
+    elType: "container",
+    isInner: depth > 0,
+    settings,
+    elements
+  };
+}
+
+function mapOverlayLayerGroup(node, helpers, depth, layers) {
+  const { base, overlay, foregroundChildren } = layers;
+  const bounds = getNodeBounds(base);
+  const foregroundBounds = foregroundChildren.map((child) => getNodeBounds(child));
+  const paddingTop = foregroundBounds.length ? Math.max(0, Math.min(...foregroundBounds.map((box) => box.y)) - bounds.y) : 0;
+  const paddingRight = foregroundBounds.length ? Math.max(0, bounds.right - Math.max(...foregroundBounds.map((box) => box.right))) : 0;
+  const paddingBottom = foregroundBounds.length ? Math.max(0, bounds.bottom - Math.max(...foregroundBounds.map((box) => box.bottom))) : 0;
+  const paddingLeft = foregroundBounds.length ? Math.max(0, Math.min(...foregroundBounds.map((box) => box.x)) - bounds.x) : 0;
+  const elements = foregroundChildren
+    .sort((left, right) => {
+      const topDelta = getNodeBounds(left).y - getNodeBounds(right).y;
+      if (Math.abs(topDelta) > 4) {
+        return topDelta;
+      }
+
+      return getNodeBounds(left).x - getNodeBounds(right).x;
+    })
+    .map((child) => mapNode(child, helpers, depth + 1))
+    .filter(Boolean);
+
+  const settings = {
+    _title: node.name || "Overlay Container",
+    content_width: "full",
+    flex_direction: "column",
+    flex_gap: px(8),
+    flex_align_items: "flex-start",
+    justify_content: "center",
+    padding: box(paddingTop, paddingRight, paddingBottom, paddingLeft),
+    html_tag: depth === 0 ? "section" : "div"
+  };
+
+  if (node.absoluteBoundingBox?.height) {
+    settings.min_height = px(node.absoluteBoundingBox.height);
+  }
+
+  if (node.absoluteBoundingBox?.width) {
+    settings.width = px(node.absoluteBoundingBox.width);
+  }
+
+  applyContainerSurface(settings, base);
+
+  const overlayFill = firstBackgroundFill(overlay);
+  if (overlayFill?.type === "SOLID" && overlayFill.color) {
+    settings.background_overlay_background = "classic";
+    settings.background_overlay_color = normalizeColor(overlayFill.color);
+    settings.background_overlay_opacity = {
+      unit: "%",
+      size: Math.round(((getColorChannels(normalizeColor(overlayFill.color))?.alpha ?? 1) * 100)),
+      sizes: []
+    };
+  } else if (overlayFill && Array.isArray(overlayFill.gradientStops) && overlayFill.gradientStops.length >= 2) {
+    const firstStop = overlayFill.gradientStops[0];
+    const lastStop = overlayFill.gradientStops[overlayFill.gradientStops.length - 1];
+    settings.background_overlay_background = "gradient";
+    settings.background_overlay_color = normalizeColor(firstStop?.color);
+    settings.background_overlay_color_b = normalizeColor(lastStop?.color);
+    settings.background_overlay_gradient_type = String(overlayFill.type || "").includes("RADIAL") ? "radial" : "linear";
+    settings.background_overlay_gradient_angle = gradientAngleFromHandles(overlayFill);
+  }
+
+  const overlayBlur = findBlurEffect(overlay);
+  if (overlayBlur && overlayBlur.type === "BACKGROUND_BLUR") {
+    settings.f2e_background_overlay_backdrop_blur = Math.round(overlayBlur.radius || 0);
+  }
+
+  applyResponsiveHints(settings, node);
 
   return {
     id: helpers.nextId(node.name),
@@ -2501,6 +2685,7 @@ function mapTextNode(node, helpers) {
 
   applyTypography(settings, node);
   applyShadow(settings, node);
+  applyResponsiveHints(settings, node);
 
   return {
     id: helpers.nextId(node.name),
@@ -2528,6 +2713,7 @@ function mapImageNode(node, helpers) {
   applyBorder(settings, node);
   applyBorderRadius(settings, node);
   applyShadow(settings, node);
+  applyResponsiveHints(settings, node);
 
   return {
     id: helpers.nextId(node.name),
@@ -2562,6 +2748,7 @@ function mapButtonNode(node, helpers) {
   applyBorder(settings, node);
   applyBorderRadius(settings, node);
   applyShadow(settings, node);
+  applyResponsiveHints(settings, node);
   applyInteractiveHover(settings, node, "button");
 
   const motionPreset = getMotionPreset(node, settings.hover_animation);
@@ -2672,6 +2859,11 @@ function mapFrameNode(node, helpers, depth) {
 
   if (isButtonLikeFrame(node)) {
     return mapButtonNode(node, helpers);
+  }
+
+  const overlayLayers = findOverlayLayers(node);
+  if (overlayLayers) {
+    return mapOverlayLayerGroup(node, helpers, depth, overlayLayers);
   }
 
   const sliderPattern = explicitWidget === "slider" || hasRole(node, "slider", "carousel") ? findSliderPattern(node) : findSliderPattern(node);

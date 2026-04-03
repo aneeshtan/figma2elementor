@@ -277,6 +277,40 @@ function extractMotionTokens(name) {
   return motions;
 }
 
+function extractBreakpointHints(name) {
+  const normalizedName = String(name || "").toLowerCase();
+  const hints = {
+    hiddenOn: [],
+    stackOn: []
+  };
+
+  const hiddenTokens = [
+    ["hide:mobile", "mobile"],
+    ["hide:tablet", "tablet"],
+    ["hide:desktop", "desktop"]
+  ];
+  const stackTokens = [
+    ["stack:mobile", "mobile"],
+    ["stack:tablet", "tablet"]
+  ];
+
+  for (let index = 0; index < hiddenTokens.length; index += 1) {
+    const token = hiddenTokens[index];
+    if (normalizedName.includes(token[0])) {
+      hints.hiddenOn.push(token[1]);
+    }
+  }
+
+  for (let index = 0; index < stackTokens.length; index += 1) {
+    const token = stackTokens[index];
+    if (normalizedName.includes(token[0])) {
+      hints.stackOn.push(token[1]);
+    }
+  }
+
+  return hints;
+}
+
 function parseElementorHint(name) {
   const rawName = String(name || "").trim();
   const match = rawName.match(/^el-([a-z0-9-]+)(?::(.+))?$/i);
@@ -504,7 +538,8 @@ function extractSemantics(name, variantProperties) {
     widgetHint: elementorHint ? elementorHint.widgetHint : null,
     elementorHint,
     state,
-    motionTokens: extractMotionTokens(name)
+    motionTokens: extractMotionTokens(name),
+    breakpoints: extractBreakpointHints(name)
   };
 }
 
