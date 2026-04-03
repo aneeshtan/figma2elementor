@@ -602,18 +602,88 @@ function extractTransition(transition) {
   };
 }
 
+function extractReactionTrigger(trigger) {
+  if (!trigger || typeof trigger !== "object") {
+    return null;
+  }
+
+  return {
+    type: typeof trigger.type === "string" ? trigger.type : null,
+    timeout: typeof trigger.timeout === "number" ? trigger.timeout : null,
+    delay: typeof trigger.delay === "number" ? trigger.delay : null
+  };
+}
+
+function extractReactionAction(action) {
+  if (!action || typeof action !== "object") {
+    return null;
+  }
+
+  return {
+    type: typeof action.type === "string" ? action.type : null,
+    destinationId: typeof action.destinationId === "string" ? action.destinationId : null,
+    navigation: typeof action.navigation === "string" ? action.navigation : null,
+    overlayRelativePosition:
+      action.overlayRelativePosition && typeof action.overlayRelativePosition === "object"
+        ? {
+            x: typeof action.overlayRelativePosition.x === "number" ? action.overlayRelativePosition.x : 0,
+            y: typeof action.overlayRelativePosition.y === "number" ? action.overlayRelativePosition.y : 0
+          }
+        : null,
+    preserveScrollPosition: typeof action.preserveScrollPosition === "boolean" ? action.preserveScrollPosition : null,
+    transition: extractTransition(action.transition)
+  };
+}
+
 function extractReactions(node) {
   if (!("reactions" in node) || !Array.isArray(node.reactions)) {
     return [];
   }
 
-  return node.reactions.map((reaction) => ({
-    trigger: reaction && reaction.trigger && typeof reaction.trigger.type === "string" ? reaction.trigger.type : null,
-    action: reaction && reaction.action && typeof reaction.action.type === "string" ? reaction.action.type : null,
-    destinationId: reaction && reaction.action && typeof reaction.action.destinationId === "string" ? reaction.action.destinationId : null,
-    navigation: reaction && reaction.action && typeof reaction.action.navigation === "string" ? reaction.action.navigation : null,
-    transition: reaction && reaction.action ? extractTransition(reaction.action.transition) : null
-  }));
+  return node.reactions.map((reaction) => {
+    const trigger = extractReactionTrigger(reaction && reaction.trigger ? reaction.trigger : null);
+    const action = extractReactionAction(reaction && reaction.action ? reaction.action : null);
+
+    return {
+      trigger: trigger ? trigger.type : null,
+      triggerDetail: trigger,
+      action: action ? action.type : null,
+      actionDetail: action,
+      destinationId: action ? action.destinationId : null,
+      navigation: action ? action.navigation : null,
+      transition: action ? action.transition : null
+    };
+  });
+}
+
+function createDelta(baseValue, nextValue) {
+  if (baseValue === nextValue) {
+    return undefined;
+  }
+
+  return nextValue == null ? null : nextValue;
+}
+
+function buildVariantDelta(baseVariant, targetVariant) {
+  if (!baseVariant || !targetVariant || !baseVariant.summary || !targetVariant.summary) {
+    return null;
+  }
+
+  const delta = {
+    fills: createDelta(baseVariant.summary.fills, targetVariant.summary.fills),
+    strokes: createDelta(baseVariant.summary.strokes, targetVariant.summary.strokes),
+    effects: createDelta(baseVariant.summary.effects, targetVariant.summary.effects),
+    opacity: createDelta(baseVariant.summary.opacity, targetVariant.summary.opacity),
+    cornerRadius: createDelta(baseVariant.summary.cornerRadius, targetVariant.summary.cornerRadius),
+    paddingTop: createDelta(baseVariant.summary.paddingTop, targetVariant.summary.paddingTop),
+    paddingRight: createDelta(baseVariant.summary.paddingRight, targetVariant.summary.paddingRight),
+    paddingBottom: createDelta(baseVariant.summary.paddingBottom, targetVariant.summary.paddingBottom),
+    paddingLeft: createDelta(baseVariant.summary.paddingLeft, targetVariant.summary.paddingLeft),
+    text: createDelta(baseVariant.summary.text, targetVariant.summary.text)
+  };
+
+  const hasChanges = Object.values(delta).some((value) => value !== undefined);
+  return hasChanges ? delta : null;
 }
 
 function extractInteractiveVariants(node) {
@@ -655,11 +725,23 @@ function extractInteractiveVariants(node) {
     return null;
   }
 
+  const defaultVariant = variants.find((variant) => variant.state === "default") || variants[0];
+  const stateDiffs = variants
+    .filter((variant) => variant !== defaultVariant && variant.state)
+    .map((variant) => ({
+      state: variant.state,
+      variantId: variant.id,
+      delta: buildVariantDelta(defaultVariant, variant)
+    }))
+    .filter((item) => item.delta);
+
   return {
     componentSetName: componentSet.name,
     currentComponentId: currentComponent ? currentComponent.id : null,
     currentComponentName: currentComponent ? currentComponent.name : null,
-    variants
+    variants,
+    defaultVariantId: defaultVariant ? defaultVariant.id : null,
+    stateDiffs
   };
 }
 

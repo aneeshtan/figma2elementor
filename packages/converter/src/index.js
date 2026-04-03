@@ -204,6 +204,11 @@ function getInteractiveVariants(node) {
   return variants && Array.isArray(variants.variants) ? variants.variants : [];
 }
 
+function getVariantStateDiffs(node) {
+  const variants = node && node.component && node.component.interactiveVariants;
+  return variants && Array.isArray(variants.stateDiffs) ? variants.stateDiffs : [];
+}
+
 function getVariantState(variant) {
   if (!variant || typeof variant !== "object") {
     return null;
@@ -256,6 +261,37 @@ function getVariantShadow(variant) {
   return effects.find((effect) => effect && ["DROP_SHADOW", "INNER_SHADOW"].includes(effect.type) && effect.color) || null;
 }
 
+function findStateDiff(node, desiredStates) {
+  const diffs = getVariantStateDiffs(node);
+  return diffs.find((item) => item && desiredStates.includes(normalizeStateToken(item.state))) || null;
+}
+
+function getDeltaFillColor(diff) {
+  const fills = diff && diff.delta && Array.isArray(diff.delta.fills) ? diff.delta.fills : [];
+  const solidFill = fills.find((fill) => fill && fill.type === "SOLID" && fill.color);
+  return solidFill ? normalizeColor(solidFill.color) : undefined;
+}
+
+function getDeltaTextColor(diff) {
+  const fills =
+    diff && diff.delta && diff.delta.text && Array.isArray(diff.delta.text.fills)
+      ? diff.delta.text.fills
+      : [];
+  const solidFill = fills.find((fill) => fill && fill.type === "SOLID" && fill.color);
+  return solidFill ? normalizeColor(solidFill.color) : undefined;
+}
+
+function getDeltaBorderColor(diff) {
+  const strokes = diff && diff.delta && Array.isArray(diff.delta.strokes) ? diff.delta.strokes : [];
+  const solidStroke = strokes.find((stroke) => stroke && stroke.type === "SOLID" && stroke.color);
+  return solidStroke ? normalizeColor(stroke.color) : undefined;
+}
+
+function getDeltaShadow(diff) {
+  const effects = diff && diff.delta && Array.isArray(diff.delta.effects) ? diff.delta.effects : [];
+  return effects.find((effect) => effect && ["DROP_SHADOW", "INNER_SHADOW"].includes(effect.type) && effect.color) || null;
+}
+
 function getMotionPreset(node, fallback = null) {
   const motionTokens = getMotionTokens(node);
 
@@ -280,9 +316,43 @@ function hasAutoPlayMotion(node) {
   return node.reactions.some((reaction) => reaction && reaction.trigger === "AFTER_TIMEOUT");
 }
 
+function getReactionDetail(node, triggerTypes, actionTypes = []) {
+  if (!node || !Array.isArray(node.reactions)) {
+    return null;
+  }
+
+  return (
+    node.reactions.find((reaction) => {
+      const trigger = reaction && typeof reaction.trigger === "string" ? reaction.trigger : null;
+      const action = reaction && typeof reaction.action === "string" ? reaction.action : null;
+      if (!triggerTypes.includes(trigger)) {
+        return false;
+      }
+
+      if (!actionTypes.length) {
+        return true;
+      }
+
+      return actionTypes.includes(action);
+    }) || null
+  );
+}
+
+function getInteractionTiming(node) {
+  const timeoutReaction = getReactionDetail(node, ["AFTER_TIMEOUT"]);
+  const duration = timeoutReaction?.triggerDetail?.timeout || timeoutReaction?.triggerDetail?.delay || null;
+  const transitionDuration = timeoutReaction?.transition?.duration || null;
+
+  return {
+    autoplayDelay: typeof duration === "number" && duration > 0 ? duration : null,
+    transitionDuration: typeof transitionDuration === "number" && transitionDuration > 0 ? transitionDuration : null
+  };
+}
+
 function applyInteractiveHover(settings, node, kind) {
+  const hoverDiff = findStateDiff(node, ["hover", "active", "focus", "selected"]);
   const variants = getInteractiveVariants(node);
-  if (!variants.length) {
+  if (!variants.length && !hoverDiff) {
     if (kind === "button") {
       const motion = getMotionPreset(node, settings.hover_animation || "grow");
       if (motion) {
@@ -294,12 +364,14 @@ function applyInteractiveHover(settings, node, kind) {
 
   const hoverVariant = findVariantByStates(variants, ["hover", "active", "focus", "selected"]);
   if (!hoverVariant) {
-    return;
+    if (!hoverDiff) {
+      return;
+    }
   }
 
   if (kind === "button") {
-    const hoverFill = getVariantFillColor(hoverVariant);
-    const hoverText = getVariantTextColor(hoverVariant);
+    const hoverFill = getDeltaFillColor(hoverDiff) || getVariantFillColor(hoverVariant);
+    const hoverText = getDeltaTextColor(hoverDiff) || getVariantTextColor(hoverVariant);
 
     if (hoverFill) {
       settings.background_hover_color = hoverFill;
@@ -317,9 +389,9 @@ function applyInteractiveHover(settings, node, kind) {
     return;
   }
 
-  const hoverFill = getVariantFillColor(hoverVariant);
-  const hoverBorder = getVariantBorderColor(hoverVariant);
-  const hoverShadow = getVariantShadow(hoverVariant);
+  const hoverFill = getDeltaFillColor(hoverDiff) || getVariantFillColor(hoverVariant);
+  const hoverBorder = getDeltaBorderColor(hoverDiff) || getVariantBorderColor(hoverVariant);
+  const hoverShadow = getDeltaShadow(hoverDiff) || getVariantShadow(hoverVariant);
 
   if (hoverFill) {
     settings.background_hover_background = "classic";
@@ -2037,6 +2109,8 @@ function buildSliderHtml(node, slides, options, helpers) {
   const visibleSlides = Math.max(1, Number(options.visibleSlides || 1));
   const gap = Math.max(16, Math.round(options.gap || 24));
   const autoplay = Boolean(options.autoplay);
+  const autoplayDelay = typeof options.autoplayDelay === "number" && options.autoplayDelay > 0 ? Math.round(options.autoplayDelay) : 4200;
+  const transitionDuration = typeof options.transitionDuration === "number" && options.transitionDuration > 0 ? Math.round(options.transitionDuration) : 450;
   const dotCount = Math.max(1, slides.length - visibleSlides + 1);
   const dots = Array.from({ length: dotCount }, (_, index) => index);
   const slideMarkup = slides
@@ -2081,7 +2155,7 @@ function buildSliderHtml(node, slides, options, helpers) {
 <style>
   #${sliderId}{--f2e-gap:${gap}px;--f2e-visible:${visibleSlides};width:100%}
   #${sliderId} .f2e-slider__viewport{overflow:hidden;width:100%}
-  #${sliderId} .f2e-slider__track{display:flex;gap:var(--f2e-gap);transition:transform .45s ease}
+  #${sliderId} .f2e-slider__track{display:flex;gap:var(--f2e-gap);transition:transform ${transitionDuration}ms ease}
   #${sliderId} .f2e-slider__slide{flex:0 0 calc((100% - (var(--f2e-gap) * (var(--f2e-visible) - 1))) / var(--f2e-visible))}
   #${sliderId} .f2e-slider__card{display:grid;grid-template-columns:minmax(220px,46%) 1fr;min-height:var(--f2e-card-height);border-radius:var(--f2e-panel-radius);overflow:hidden;box-shadow:0 16px 40px rgba(14,30,37,.08);transform:translateY(0);transition:transform .28s ease,box-shadow .28s ease;background:var(--f2e-panel)}
   #${sliderId} .f2e-slider__card:hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(14,30,37,.15)}
@@ -2136,7 +2210,7 @@ function buildSliderHtml(node, slides, options, helpers) {
         var current = Number((root.querySelector('.f2e-slider__dot.is-active') || dots[0]).getAttribute('data-dot-index') || 0);
         var next = current >= dots.length - 1 ? 0 : current + 1;
         setActive(next);
-      }, 4200);
+      }, ${autoplayDelay});
     }
     window.addEventListener('resize', function() {
       setActive(Number((root.querySelector('.f2e-slider__dot.is-active') || dots[0] || { getAttribute: function() { return 0; } }).getAttribute('data-dot-index') || 0));
@@ -2148,6 +2222,7 @@ function buildSliderHtml(node, slides, options, helpers) {
 
 function mapSliderSection(node, helpers, depth, sliderPattern) {
   const slideData = sliderPattern.cards.map((card) => extractSlideCardData(card)).filter(Boolean);
+  const interactionTiming = getInteractionTiming(node);
 
   if (slideData.length < 2) {
     return null;
@@ -2161,7 +2236,18 @@ function mapSliderSection(node, helpers, depth, sliderPattern) {
   elements.push(
     createHtmlWidgetNode(
       `${node.name || "Slider"} Carousel`,
-      buildSliderHtml(node, slideData, { visibleSlides: sliderPattern.visibleSlides, gap: sliderPattern.gap, autoplay: hasAutoPlayMotion(node) }, helpers),
+      buildSliderHtml(
+        node,
+        slideData,
+        {
+          visibleSlides: sliderPattern.visibleSlides,
+          gap: sliderPattern.gap,
+          autoplay: hasAutoPlayMotion(node),
+          autoplayDelay: interactionTiming.autoplayDelay,
+          transitionDuration: interactionTiming.transitionDuration
+        },
+        helpers
+      ),
       helpers
     )
   );
