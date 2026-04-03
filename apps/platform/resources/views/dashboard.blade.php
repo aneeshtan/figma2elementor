@@ -176,36 +176,42 @@
                 </div>
             </div>
 
-            <div class="mt-6 grid gap-6 lg:grid-cols-2">
-                <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                    <p class="text-sm uppercase tracking-[0.2em] text-orange-500">Plugin setup</p>
-                    <h3 class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">Use the Laravel domain only</h3>
-                    <div class="mt-4 space-y-4 text-sm text-slate-600 dark:text-slate-300">
-                        <div>
-                            <div class="font-medium text-slate-900 dark:text-white">Manifest</div>
-                            <code class="mt-2 block overflow-x-auto rounded-xl bg-slate-100 px-3 py-2 text-xs dark:bg-slate-900">/Users/farshad.ghanzanfari/Documents/www/Figma2Element/apps/figma-plugin/manifest.json</code>
-                        </div>
-                        <div>
-                            <div class="font-medium text-slate-900 dark:text-white">Endpoint</div>
-                            <code class="mt-2 block overflow-x-auto rounded-xl bg-slate-100 px-3 py-2 text-xs dark:bg-slate-900">{{ $pluginEndpoint }}</code>
-                        </div>
-                        <ol class="space-y-2 pl-5 text-sm list-decimal">
-                            <li>Create an API key here.</li>
-                            <li>Paste the key into the Figma plugin.</li>
-                            <li>Set the plugin endpoint to the value above.</li>
-                            <li>Convert from Figma without leaving this account surface.</li>
-                        </ol>
+            <div class="mt-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <p class="text-sm uppercase tracking-[0.2em] text-orange-500">Getting Started</p>
+                        <h3 class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">Use the platform in three steps</h3>
+                        <p class="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+                            Install the public Figma plugin, connect WordPress, and use this dashboard to manage keys and downloads.
+                        </p>
                     </div>
+                    <code class="rounded-xl bg-slate-100 px-3 py-2 text-xs text-slate-700 dark:bg-slate-900 dark:text-slate-200">{{ $pluginEndpoint }}</code>
                 </div>
 
-                <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-                    <p class="text-sm uppercase tracking-[0.2em] text-orange-500">Architecture</p>
-                    <h3 class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">What changed</h3>
-                    <ul class="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
-                        <li>Users now register and manage billing here in Laravel.</li>
-                        <li>The Figma plugin should call this domain’s <code>/api/convert</code> route.</li>
-                        <li>The legacy Node app remains the internal converter service behind the proxy.</li>
-                    </ul>
+                <div class="mt-6 grid gap-4 lg:grid-cols-3">
+                    <div class="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+                        <div class="text-xs font-semibold uppercase tracking-[0.18em] text-orange-500">Step 1</div>
+                        <h4 class="mt-3 text-lg font-semibold text-slate-900 dark:text-white">Download the Figma plugin</h4>
+                        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                            Install the Figma2Element plugin from the Figma Community, then paste one of your active API keys into the plugin settings.
+                        </p>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+                        <div class="text-xs font-semibold uppercase tracking-[0.18em] text-orange-500">Step 2</div>
+                        <h4 class="mt-3 text-lg font-semibold text-slate-900 dark:text-white">Use the WordPress plugin</h4>
+                        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                            Install the WordPress companion plugin on your Elementor site so you can pull exports directly into your template library.
+                        </p>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 p-5 dark:border-slate-700">
+                        <div class="text-xs font-semibold uppercase tracking-[0.18em] text-orange-500">Step 3</div>
+                        <h4 class="mt-3 text-lg font-semibold text-slate-900 dark:text-white">Convert and import</h4>
+                        <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                            Convert sections from Figma, then download the latest JSON here or sync it into WordPress using the same account endpoint.
+                        </p>
+                    </div>
                 </div>
             </div>
 
