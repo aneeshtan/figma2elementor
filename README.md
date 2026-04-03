@@ -26,6 +26,10 @@ This project is licensed under the MIT license for open-source use.
   - plugin manifest
   - plugin controller
   - plugin UI
+  - publishable icon asset
+- `docs`
+  - Figma plugin publishing checklist
+  - Figma Community listing copy
 - `packages/converter`
   - Figma node normalization
   - Elementor JSON generation
@@ -52,6 +56,16 @@ npm run dev
 5. Paste the API key into the plugin, select a frame, and run the conversion
 6. Download the generated Elementor JSON
 7. Import that JSON into Elementor's template library
+
+## Publish the Figma plugin
+
+This repo now includes a publish-ready manifest with restricted network access and a production default endpoint.
+
+Start here:
+
+- [docs/FIGMA_PLUGIN_PUBLISHING.md](/Users/farshad.ghanzanfari/Documents/www/Figma2Element/docs/FIGMA_PLUGIN_PUBLISHING.md)
+- [docs/FIGMA_PLUGIN_LISTING.md](/Users/farshad.ghanzanfari/Documents/www/Figma2Element/docs/FIGMA_PLUGIN_LISTING.md)
+- [apps/figma-plugin/assets/icon.svg](/Users/farshad.ghanzanfari/Documents/www/Figma2Element/apps/figma-plugin/assets/icon.svg)
 
 Default local development key:
 

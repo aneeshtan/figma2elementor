@@ -4,6 +4,16 @@
   "api": "1.0.0",
   "editorType": ["figma"],
   "main": "code.js",
-  "ui": "ui.html"
+  "ui": "ui.html",
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": [
+      "https://figma2elementor.ctrlaltl.com/api/"
+    ],
+    "reasoning": "The plugin sends the user's selected Figma frame structure to the hosted Figma2Element conversion API in order to generate Elementor JSON exports.",
+    "devAllowedDomains": [
+      "http://127.0.0.1:4173/api/",
+      "http://localhost:4173/api/"
+    ]
+  }
 }
-
