@@ -61,7 +61,7 @@ class ApiKeyManagementTest extends TestCase
         $this->assertSame(2, $user->apiKeys()->whereNull('revoked_at')->count());
     }
 
-    public function test_dashboard_marks_legacy_keys_as_not_copyable(): void
+    public function test_dashboard_hides_revoked_keys_and_marks_legacy_active_keys_as_not_copyable(): void
     {
         $user = User::factory()->create();
 
@@ -80,12 +80,23 @@ class ApiKeyManagementTest extends TestCase
             'plain_text_key' => 'f2e_live_modern_secret',
         ]);
 
+        ApiKey::query()->create([
+            'user_id' => $user->id,
+            'name' => 'Revoked key',
+            'key_prefix' => 'f2e_live_revoked',
+            'key_hash' => hash('sha256', 'f2e_live_revoked_secret'),
+            'plain_text_key' => 'f2e_live_revoked_secret',
+            'revoked_at' => now(),
+        ]);
+
         $response = $this->actingAs($user)->get('/dashboard');
 
         $response
             ->assertOk()
             ->assertSee('2/2 active keys in use.')
-            ->assertSee('Legacy key cannot be copied because the original secret was never stored.')
-            ->assertSee('Copy key');
+            ->assertSee('This active key was created before copy support. Create a replacement key if you need a copyable secret.')
+            ->assertSee('Legacy key')
+            ->assertSee('Copy key')
+            ->assertDontSee('Revoked key');
     }
 }

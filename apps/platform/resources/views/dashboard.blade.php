@@ -132,7 +132,7 @@
                                         <div class="font-medium text-slate-900 dark:text-white">{{ $apiKey->name }}</div>
                                         <div class="mt-1 text-xs text-slate-500">{{ $apiKey->key_prefix }}...</div>
                                         <div class="mt-1 text-xs text-slate-500">
-                                            {{ $apiKey->revoked_at ? 'Revoked' : 'Active' }}
+                                            Active
                                             @if ($apiKey->last_used_at)
                                                 · last used {{ $apiKey->last_used_at->diffForHumans() }}
                                             @endif
@@ -141,7 +141,7 @@
                                             @if ($apiKey->plain_text_key)
                                                 Full key is available to copy from this dashboard.
                                             @else
-                                                Legacy key cannot be copied because the original secret was never stored.
+                                                This active key was created before copy support. Create a replacement key if you need a copyable secret.
                                             @endif
                                         </div>
                                     </div>
@@ -154,16 +154,18 @@
                                             >
                                                 Copy key
                                             </button>
+                                        @else
+                                            <span class="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+                                                Legacy key
+                                            </span>
                                         @endif
-                                        @if (! $apiKey->revoked_at)
-                                            <form method="POST" action="{{ route('api-keys.destroy', $apiKey) }}">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400">
-                                                    Revoke
-                                                </button>
-                                            </form>
-                                        @endif
+                                        <form method="POST" action="{{ route('api-keys.destroy', $apiKey) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400">
+                                                Revoke
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>

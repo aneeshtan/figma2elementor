@@ -29,7 +29,7 @@ class DashboardController extends Controller
             'plans' => $plans,
             'currentPlanKey' => $currentPlanKey,
             'subscription' => $subscription,
-            'apiKeys' => $user->apiKeys()->latest()->get(),
+            'apiKeys' => $user->apiKeys()->whereNull('revoked_at')->latest()->get(),
             'activeApiKeyCount' => $user->apiKeys()->whereNull('revoked_at')->count(),
             'jobs' => $user->conversionJobs()->latest()->limit(10)->get(),
             'pluginEndpoint' => route('api.convert'),
