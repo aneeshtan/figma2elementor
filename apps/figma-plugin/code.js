@@ -827,10 +827,7 @@ async function serializeNode(node, parentSemantics = null) {
   const variantProperties = extractVariantProperties(node);
   const semantics = extractSemantics(node.name, variantProperties);
   const effectiveSemantics = shouldAutoAssignSlideRole(node, parentSemantics)
-    ? {
-        ...semantics,
-        role: "slide"
-      }
+    ? Object.assign({}, semantics, { role: "slide" })
     : semantics;
   const payload = {
     id: node.id,
