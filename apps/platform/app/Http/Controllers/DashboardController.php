@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ConversionJob;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -32,6 +36,28 @@ class DashboardController extends Controller
             'monthlyUsage' => $user->conversionJobs()
                 ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
                 ->sum('credits_used'),
+        ]);
+    }
+
+    public function download(Request $request, ConversionJob $job): StreamedResponse|RedirectResponse
+    {
+        abort_unless((int) $job->user_id === (int) $request->user()->id, 404);
+
+        $template = data_get($job->meta, 'template');
+        if (! is_array($template) || $template === []) {
+            return redirect()
+                ->route('dashboard')
+                ->with('status', 'This export is no longer available for download.');
+        }
+
+        $baseName = Str::slug($job->export_name ?: $job->source_name ?: 'elementor-export');
+        $fileName = trim($baseName) !== '' ? $baseName : 'elementor-export';
+        $fileName .= '-'.$job->id.'.json';
+
+        return response()->streamDownload(function () use ($template): void {
+            echo json_encode($template, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        }, $fileName, [
+            'Content-Type' => 'application/json; charset=UTF-8',
         ]);
     }
 }

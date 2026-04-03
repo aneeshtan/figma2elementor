@@ -223,6 +223,7 @@
                                 <th class="pb-3 pr-6 font-medium">Status</th>
                                 <th class="pb-3 pr-6 font-medium">Credits</th>
                                 <th class="pb-3 pr-6 font-medium">Updated</th>
+                                <th class="pb-3 font-medium">Download</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -232,10 +233,19 @@
                                     <td class="py-3 pr-6 text-slate-600 dark:text-slate-300">{{ $job->status }}</td>
                                     <td class="py-3 pr-6 text-slate-600 dark:text-slate-300">{{ $job->credits_used }}</td>
                                     <td class="py-3 pr-6 text-slate-500">{{ $job->updated_at->diffForHumans() }}</td>
+                                    <td class="py-3">
+                                        @if (is_array(data_get($job->meta, 'template')) && data_get($job->meta, 'template') !== [])
+                                            <a href="{{ route('dashboard.jobs.download', $job) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 dark:border-slate-600 dark:text-slate-200">
+                                                Download JSON
+                                            </a>
+                                        @else
+                                            <span class="text-xs text-slate-400 dark:text-slate-500">Unavailable</span>
+                                        @endif
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="py-4 text-slate-500 dark:text-slate-400">No conversion jobs recorded yet.</td>
+                                    <td colspan="5" class="py-4 text-slate-500 dark:text-slate-400">No conversion jobs recorded yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>
