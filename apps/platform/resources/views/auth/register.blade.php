@@ -1,4 +1,10 @@
 <x-guest-layout>
+    <div class="mb-8">
+        <p class="text-sm font-semibold uppercase tracking-[0.24em] text-orange-400">Create account</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">Start using Figma2Element</h2>
+        <p class="mt-3 text-sm leading-6 text-slate-400">Create your account to issue plugin API keys, manage billing, and track conversion exports.</p>
+    </div>
+
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
@@ -39,12 +45,12 @@
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('login') }}">
+        <div class="mt-6 flex items-center justify-between gap-4">
+            <a class="text-sm text-slate-400 transition hover:text-white focus:outline-none" href="{{ route('login') }}">
                 {{ __('Already registered?') }}
             </a>
 
-            <x-primary-button class="ms-4">
+            <x-primary-button>
                 {{ __('Register') }}
             </x-primary-button>
         </div>

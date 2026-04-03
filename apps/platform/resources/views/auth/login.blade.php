@@ -1,4 +1,10 @@
 <x-guest-layout>
+    <div class="mb-8">
+        <p class="text-sm font-semibold uppercase tracking-[0.24em] text-orange-400">Sign in</p>
+        <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">Return to your dashboard</h2>
+        <p class="mt-3 text-sm leading-6 text-slate-400">Use your account to manage API keys, billing, and Figma conversion history.</p>
+    </div>
+
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
@@ -25,23 +31,28 @@
         </div>
 
         <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" name="remember">
-                <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
+        <div class="mt-5 block">
+            <label for="remember_me" class="inline-flex items-center gap-2">
+                <input id="remember_me" type="checkbox" class="rounded border-white/20 bg-white/5 text-orange-500 shadow-sm focus:ring-orange-400 focus:ring-offset-0" name="remember">
+                <span class="text-sm text-slate-400">{{ __('Remember me') }}</span>
             </label>
         </div>
 
-        <div class="flex items-center justify-end mt-4">
+        <div class="mt-6 flex items-center justify-between gap-4">
             @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('password.request') }}">
+                <a class="text-sm text-slate-400 transition hover:text-white focus:outline-none" href="{{ route('password.request') }}">
                     {{ __('Forgot your password?') }}
                 </a>
             @endif
 
-            <x-primary-button class="ms-3">
+            <x-primary-button>
                 {{ __('Log in') }}
             </x-primary-button>
+        </div>
+
+        <div class="mt-8 border-t border-white/10 pt-5 text-sm text-slate-400">
+            Need an account?
+            <a class="font-medium text-orange-400 transition hover:text-orange-300" href="{{ route('register') }}">Create one here</a>
         </div>
     </form>
 </x-guest-layout>
