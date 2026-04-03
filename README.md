@@ -2,31 +2,32 @@
 
 Figma2Element is an MVP foundation for a platform that converts Figma frames into importable Elementor template JSON.
 
-This repository is intentionally dependency-light so the core product shape is clear before adding billing, auth, queues, storage, and WordPress automation.
+This repository now has a merged application surface: Laravel is the public app for landing pages, auth, billing, dashboard, and the public plugin endpoint, while the original Node server remains the internal converter engine.
 
 This project is licensed under the MIT license for open-source use.
 
 ## What is included
 
-- A local product site with a conversion playground
-- A local dashboard with persistent API keys, plan limits, and saved jobs
-- A small HTTP API that accepts a simplified Figma node tree and returns Elementor JSON
+- A Laravel app for signup, login, billing, API keys, and conversion jobs
+- A public conversion API exposed from Laravel at `/api/convert`
+- An internal Node conversion service that Laravel proxies to
 - A shared conversion pipeline that maps Figma-like nodes into Elementor containers and widgets
-- A Figma plugin skeleton that serializes the current selection and sends it to the local API
+- A Figma plugin that serializes the current selection and sends it to the Laravel API
 - A sample Figma document payload and a script that generates a demo Elementor template file
 
 ## Repository layout
 
 - `apps/web`
-  - marketing page
-  - local API server
-  - platform dashboard
-  - live conversion playground
+  - internal converter service
+  - legacy MVP frontend
+  - local asset and job export service
 - `apps/platform`
-  - Laravel auth app
+  - public Laravel app
+  - auth and registration
   - Stripe subscription billing
   - API key management
   - conversion job dashboard
+  - public `/api/convert` proxy
 - `apps/figma-plugin`
   - plugin manifest
   - plugin controller
@@ -49,18 +50,32 @@ This project is licensed under the MIT license for open-source use.
 
 ## Run locally
 
-1. Start the local app:
+1. Start the internal converter service:
 
 ```bash
 npm run dev
 ```
 
-2. Open `http://127.0.0.1:4173`
-3. Copy the default API key from the dashboard
-4. In Figma, import the plugin from `apps/figma-plugin/manifest.json`
-5. Paste the API key into the plugin, select a frame, and run the conversion
-6. Download the generated Elementor JSON
-7. Import that JSON into Elementor's template library
+2. Start the Laravel platform:
+
+```bash
+cd apps/platform
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+composer run dev
+```
+
+3. Open `http://127.0.0.1:8000`
+4. Register or sign in
+5. Create an API key in the dashboard
+6. In Figma, import the plugin from `apps/figma-plugin/manifest.json`
+7. Set the plugin endpoint to `http://127.0.0.1:8000/api/convert`
+8. Paste the API key into the plugin, select a frame, and run the conversion
+9. Download the generated Elementor JSON
+10. Import that JSON into Elementor's template library
 
 ## Publish the Figma plugin
 
@@ -72,20 +87,14 @@ Start here:
 - [docs/FIGMA_PLUGIN_LISTING.md](/Users/farshad.ghanzanfari/Documents/www/Figma2Element/docs/FIGMA_PLUGIN_LISTING.md)
 - [apps/figma-plugin/assets/icon.svg](/Users/farshad.ghanzanfari/Documents/www/Figma2Element/apps/figma-plugin/assets/icon.svg)
 
-Default local development key:
-
-```text
-f2e_live_local_plugin_key
-```
-
 Runtime state is written to `data/platform.local.json` on first boot, seeded from [data/platform.seed.json](/Users/farshad.ghanzanfari/Documents/www/Figma2Element/data/platform.seed.json). Generated export jobs stay local and are ignored by git.
 
 Example authenticated conversion request:
 
 ```bash
-curl -X POST http://127.0.0.1:4173/api/convert \
+curl -X POST http://127.0.0.1:8000/api/convert \
   -H "Content-Type: application/json" \
-  -H "x-api-key: f2e_live_local_plugin_key" \
+  -H "x-api-key: <your-laravel-api-key>" \
   -d @examples/landing-page.figjson
 ```
 
@@ -101,25 +110,16 @@ Supported first-pass mappings:
 
 Current platform capabilities:
 
-- persistent local account state
-- pricing plans and export quotas
-- API key generation
-- saved conversion jobs with download endpoints
-- plugin and playground authentication
-- Laravel platform scaffold with auth and Stripe billing in `apps/platform`
-
-Partially implemented now:
-
 - Laravel Breeze authentication
 - Laravel Cashier subscription billing
 - hosted Stripe Checkout and Billing Portal routes
 - hashed API key management
-- conversion job persistence model
+- conversion job persistence
+- public proxy routes for `/api/convert` and `/api/assets/*`
+- Laravel landing page and dashboard as the primary user-facing app
 
 Still not implemented yet:
 
-- full asset upload pipeline
-- wiring the Node converter into Laravel runtime
 - teams and seat-based billing
 - background jobs and queue retries
 - WordPress plugin automation
@@ -128,7 +128,7 @@ Still not implemented yet:
 
 ## Recommended next build steps
 
-1. Move API key verification and job persistence from `apps/web` into `apps/platform`.
+1. Retire the legacy `apps/web` frontend and keep it as converter-service-only code.
 2. Add Stripe webhook handling and quota enforcement in Laravel.
 3. Add signed asset upload and media handling for WordPress.
 4. Expand the mapper for Forms, Icons, Tabs, Accordions, Sliders, WooCommerce widgets, and responsive breakpoints.

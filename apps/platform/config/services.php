@@ -45,4 +45,9 @@ return [
         ],
     ],
 
+    'converter' => [
+        'url' => env('CONVERTER_SERVICE_URL', 'http://127.0.0.1:4173'),
+        'service_key' => env('CONVERTER_SERVICE_KEY', 'f2e_live_local_plugin_key'),
+    ],
+
 ];

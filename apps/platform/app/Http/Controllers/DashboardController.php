@@ -27,6 +27,7 @@ class DashboardController extends Controller
             'subscription' => $subscription,
             'apiKeys' => $user->apiKeys()->latest()->get(),
             'jobs' => $user->conversionJobs()->latest()->limit(10)->get(),
+            'pluginEndpoint' => route('api.convert'),
             'monthlyUsage' => $user->conversionJobs()
                 ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
                 ->sum('credits_used'),

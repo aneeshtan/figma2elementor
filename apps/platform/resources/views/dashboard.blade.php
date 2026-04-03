@@ -131,6 +131,39 @@
                 </div>
             </div>
 
+            <div class="mt-6 grid gap-6 lg:grid-cols-2">
+                <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    <p class="text-sm uppercase tracking-[0.2em] text-orange-500">Plugin setup</p>
+                    <h3 class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">Use the Laravel domain only</h3>
+                    <div class="mt-4 space-y-4 text-sm text-slate-600 dark:text-slate-300">
+                        <div>
+                            <div class="font-medium text-slate-900 dark:text-white">Manifest</div>
+                            <code class="mt-2 block overflow-x-auto rounded-xl bg-slate-100 px-3 py-2 text-xs dark:bg-slate-900">/Users/farshad.ghanzanfari/Documents/www/Figma2Element/apps/figma-plugin/manifest.json</code>
+                        </div>
+                        <div>
+                            <div class="font-medium text-slate-900 dark:text-white">Endpoint</div>
+                            <code class="mt-2 block overflow-x-auto rounded-xl bg-slate-100 px-3 py-2 text-xs dark:bg-slate-900">{{ $pluginEndpoint }}</code>
+                        </div>
+                        <ol class="space-y-2 pl-5 text-sm list-decimal">
+                            <li>Create an API key here.</li>
+                            <li>Paste the key into the Figma plugin.</li>
+                            <li>Set the plugin endpoint to the value above.</li>
+                            <li>Convert from Figma without leaving this account surface.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    <p class="text-sm uppercase tracking-[0.2em] text-orange-500">Architecture</p>
+                    <h3 class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">What changed</h3>
+                    <ul class="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                        <li>Users now register and manage billing here in Laravel.</li>
+                        <li>The Figma plugin should call this domain’s <code>/api/convert</code> route.</li>
+                        <li>The legacy Node app remains the internal converter service behind the proxy.</li>
+                    </ul>
+                </div>
+            </div>
+
             <div class="mt-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                 <div class="flex items-center justify-between gap-4">
                     <div>
