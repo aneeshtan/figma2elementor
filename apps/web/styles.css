@@ -120,7 +120,7 @@ body {
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
   gap: 24px;
   padding: 36px 0 68px;
 }
@@ -158,17 +158,18 @@ h2,
 h3 {
   margin: 0;
   font-weight: 700;
-  line-height: 1;
+  line-height: 0.94;
   letter-spacing: -0.04em;
+  text-wrap: balance;
 }
 
 h1 {
-  font-size: clamp(3.2rem, 6vw, 5.8rem);
-  max-width: 11ch;
+  font-size: clamp(2.9rem, 4.9vw, 4.9rem);
+  max-width: 8.5ch;
 }
 
 h2 {
-  font-size: clamp(2.2rem, 3.8vw, 3.4rem);
+  font-size: clamp(2rem, 3.2vw, 3rem);
   max-width: 12ch;
 }
 
@@ -187,7 +188,7 @@ h3 {
 }
 
 .hero-text {
-  max-width: 54ch;
+  max-width: 50ch;
   color: var(--muted);
   margin: 20px 0 0;
 }
@@ -351,7 +352,7 @@ button.button {
 
 .status-list div {
   display: grid;
-  grid-template-columns: 14px 1fr;
+  grid-template-columns: 14px minmax(0, 1fr);
   column-gap: 12px;
   row-gap: 2px;
   align-items: start;
@@ -359,10 +360,12 @@ button.button {
 
 .status-list strong {
   display: block;
+  grid-column: 2;
   font-size: 14px;
 }
 
 .status-list small {
+  grid-column: 2;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.5;
@@ -705,6 +708,16 @@ textarea {
   .footer-card {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 1120px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  h1 {
+    max-width: 10ch;
   }
 }
 
