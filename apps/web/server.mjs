@@ -34,7 +34,7 @@ const mimeTypes = {
 
 function jsonResponse(res, statusCode, payload) {
   res.writeHead(statusCode, {
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, x-api-key, x-client-name, x-origin-app",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Origin": "*",
     "Content-Type": "application/json; charset=utf-8"
@@ -113,7 +113,7 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, x-api-key, x-client-name, x-origin-app",
       "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
       "Access-Control-Allow-Origin": "*"
     });
