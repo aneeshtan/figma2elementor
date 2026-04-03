@@ -59,7 +59,7 @@
                         </div>
                         <div class="min-w-[260px] rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
                             <div class="text-xs font-semibold uppercase tracking-[0.22em] text-orange-300">Version</div>
-                            <div class="mt-2 text-lg font-semibold text-white">v0.3.0</div>
+                            <div class="mt-2 text-lg font-semibold text-white">v0.4.0</div>
                             <div class="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-orange-300">Last Updated</div>
                             <div class="mt-2 text-sm text-slate-300">April 3, 2026</div>
                             <div class="mt-5 flex flex-wrap gap-3">

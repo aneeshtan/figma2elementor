@@ -3,7 +3,7 @@
  * Plugin Name: Figma2Elementor Importer
  * Plugin URI: https://github.com/aneeshtan/figma2elementor
  * Description: Fetch completed exports from Figma2Element and import them into Elementor with WordPress media sideloading.
- * Version: 0.3.0
+ * Version: 0.4.0
  * Author: Farshad and AI
  * Author URI: https://github.com/aneeshtan/figma2elementor
  * License: MIT
