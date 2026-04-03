@@ -1080,7 +1080,8 @@ function extractSlideCardData(node) {
       borderColor: normalizeColor(slideStroke?.color) || "rgba(148,163,184,.24)",
       cardRadius: node.cornerRadius || panelNode?.cornerRadius || 12,
       imageRadius: imageNode.cornerRadius || node.cornerRadius || 12,
-      minHeight: Math.max(imageBounds.height || 0, getNodeBounds(node).height || 0, 92)
+      minHeight: Math.max(imageBounds.height || 0, getNodeBounds(node).height || 0, 92),
+      width: Math.max(getNodeBounds(node).width || imageBounds.width || 160, 120)
     };
   }
 
@@ -2124,6 +2125,10 @@ function mapAccordionNode(node, helpers) {
 }
 
 function buildSliderHtml(node, slides, options, helpers) {
+  if (slides.every((slide) => slide.type === "logo")) {
+    return buildLogoCarouselHtml(node, slides, options, helpers);
+  }
+
   const sliderId = `f2e-slider-${helpers.nextId(node.name || "slider")}`;
   const visibleSlides = Math.max(1, Number(options.visibleSlides || 1));
   const gap = Math.max(16, Math.round(options.gap || 24));
@@ -2248,6 +2253,46 @@ function buildSliderHtml(node, slides, options, helpers) {
     setActive(0);
   })();
 </script>`;
+}
+
+function buildLogoCarouselHtml(node, slides, options, helpers) {
+  const carouselId = `f2e-logo-carousel-${helpers.nextId(node.name || "logo-carousel")}`;
+  const gap = Math.max(16, Math.round(options.gap || 24));
+  const autoplay = Boolean(options.autoplay);
+  const repeatedSlides = autoplay ? slides.concat(slides) : slides;
+  const slideMarkup = repeatedSlides
+    .map(
+      (slide, index) => `
+        <div class="f2e-logo-carousel__item" data-logo-index="${index}" style="--f2e-logo-bg:${escapeAttribute(slide.cardColor)};--f2e-logo-border:${escapeAttribute(slide.borderColor)};--f2e-logo-radius:${Number(slide.cardRadius || 12)}px;--f2e-logo-height:${Math.round(slide.minHeight)}px;--f2e-logo-width:${Math.round(slide.width || 160)}px;">
+          <img src="${escapeAttribute(slide.imageUrl)}" alt="${escapeAttribute(slide.title || `Logo ${index + 1}`)}" />
+        </div>`
+    )
+    .join("");
+
+  return `
+<div id="${carouselId}" class="f2e-logo-carousel${autoplay ? " is-autoplay" : ""}">
+  <div class="f2e-logo-carousel__viewport">
+    <div class="f2e-logo-carousel__track">
+      ${slideMarkup}
+    </div>
+  </div>
+</div>
+<style>
+  #${carouselId}{--f2e-gap:${gap}px;width:100%}
+  #${carouselId} .f2e-logo-carousel__viewport{overflow:hidden;width:100%}
+  #${carouselId} .f2e-logo-carousel__track{display:flex;align-items:center;gap:var(--f2e-gap);width:max-content}
+  #${carouselId} .f2e-logo-carousel__item{display:flex;align-items:center;justify-content:center;flex:0 0 var(--f2e-logo-width);min-width:var(--f2e-logo-width);min-height:var(--f2e-logo-height);padding:18px;border-radius:var(--f2e-logo-radius);background:var(--f2e-logo-bg);border:1px solid var(--f2e-logo-border);box-shadow:0 10px 24px rgba(15,23,42,.04)}
+  #${carouselId} .f2e-logo-carousel__item img{display:block;width:100%;height:auto;max-height:72px;object-fit:contain}
+  #${carouselId}.is-autoplay .f2e-logo-carousel__track{animation:f2e-logo-scroll-${carouselId} 24s linear infinite}
+  #${carouselId}.is-autoplay:hover .f2e-logo-carousel__track{animation-play-state:paused}
+  @keyframes f2e-logo-scroll-${carouselId}{
+    from{transform:translateX(0)}
+    to{transform:translateX(calc(-50% - (var(--f2e-gap) / 2)))}
+  }
+  @media (max-width: 1024px){
+    #${carouselId} .f2e-logo-carousel__item{flex-basis:min(42vw,var(--f2e-logo-width));min-width:min(42vw,var(--f2e-logo-width))}
+  }
+</style>`;
 }
 
 function mapSliderSection(node, helpers, depth, sliderPattern) {
