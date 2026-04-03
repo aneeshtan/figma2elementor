@@ -122,6 +122,7 @@ Current platform capabilities:
 
 For higher-fidelity exports, the plugin and converter now understand a small naming contract:
 
+- `el-container:name`, `el-button:name`, `el-heading:name`, `el-text-editor:name`, `el-image:name`, `el-divider:name`, `el-spacer:name`
 - `[slider]` or `[carousel]` on the root slider frame
 - `[track]` on the slide track wrapper
 - `[slide]` or `[card]` on each repeated slide card
@@ -131,6 +132,8 @@ For higher-fidelity exports, the plugin and converter now understand a small nam
 - motion tokens in names such as `motion:autoplay`, `motion:grow`, `motion:lift`, `motion:fade-up`
 
 The Figma plugin also exports component variant metadata and prototype reactions. When a button or card is backed by a component set with `Default` and `Hover` variants, the converter now uses that hover state instead of guessing hover colors.
+
+Use `el-*` names when you want strict widget mapping. Use semantic roles and motion tokens when you want higher-fidelity interactive sections like sliders and hover-aware cards.
 
 Still not implemented yet:
 

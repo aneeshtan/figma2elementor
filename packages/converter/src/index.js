@@ -75,6 +75,11 @@ function getSemantics(node) {
   return node && node.semantics && typeof node.semantics === "object" ? node.semantics : {};
 }
 
+function getWidgetHint(node) {
+  const semantics = getSemantics(node);
+  return typeof semantics.widgetHint === "string" && semantics.widgetHint ? semantics.widgetHint : null;
+}
+
 function getNodeRole(node) {
   const semantics = getSemantics(node);
   return typeof semantics.role === "string" && semantics.role ? semantics.role : null;
@@ -302,6 +307,11 @@ function inferHeadingLevel(fontSize = 16) {
 }
 
 function inferTextWidget(node) {
+  const explicitWidget = getWidgetHint(node);
+  if (explicitWidget === "heading" || explicitWidget === "text-editor") {
+    return explicitWidget;
+  }
+
   const fontSize = node.style?.fontSize || 16;
   const name = (node.name || "").toLowerCase();
 
@@ -831,6 +841,47 @@ function createHtmlWidgetNode(name, html, helpers) {
     settings: {
       _title: name || "HTML",
       html
+    },
+    elements: []
+  };
+}
+
+function mapSpacerNode(node, helpers) {
+  const bounds = getNodeBounds(node);
+
+  return {
+    id: helpers.nextId(node.name),
+    elType: "widget",
+    widgetType: "spacer",
+    isInner: false,
+    settings: {
+      _title: node.name || "Spacer",
+      space: Math.max(8, Math.round(bounds.height || bounds.width || 24))
+    },
+    elements: []
+  };
+}
+
+function mapDividerNode(node, helpers) {
+  const bounds = getNodeBounds(node);
+  const stroke = firstStroke(node);
+  const fill = firstSolidFill(node);
+  const color = normalizeColor(stroke?.color || fill?.color) || "#d4d4d8";
+
+  return {
+    id: helpers.nextId(node.name),
+    elType: "widget",
+    widgetType: "divider",
+    isInner: false,
+    settings: {
+      _title: node.name || "Divider",
+      color,
+      weight: Math.max(1, Math.round(stroke?.weight || bounds.height || 1)),
+      width: {
+        unit: "%",
+        size: 100,
+        sizes: []
+      }
     },
     elements: []
   };
@@ -1402,11 +1453,25 @@ function mapDecorativeShape(node, helpers) {
 }
 
 function mapFrameNode(node, helpers, depth) {
+  const explicitWidget = getWidgetHint(node);
+
+  if (explicitWidget === "button") {
+    return mapButtonNode(node, helpers);
+  }
+
+  if (explicitWidget === "spacer") {
+    return mapSpacerNode(node, helpers);
+  }
+
+  if (explicitWidget === "divider") {
+    return mapDividerNode(node, helpers);
+  }
+
   if (isButtonLikeFrame(node)) {
     return mapButtonNode(node, helpers);
   }
 
-  const sliderPattern = findSliderPattern(node);
+  const sliderPattern = explicitWidget === "slider" || hasRole(node, "slider", "carousel") ? findSliderPattern(node) : findSliderPattern(node);
   if (sliderPattern) {
     const sliderSection = mapSliderSection(node, helpers, depth, sliderPattern);
     if (sliderSection) {
@@ -1473,12 +1538,33 @@ function mapNode(node, helpers, depth = 0) {
 
   helpers.report.convertedNodes += 1;
 
+  const explicitWidget = getWidgetHint(node);
+  if (explicitWidget || getNodeRole(node)) {
+    helpers.report.hintsApplied += 1;
+  }
+
   if (["FRAME", "GROUP", "COMPONENT", "INSTANCE", "SELECTION"].includes(node.type)) {
     return mapFrameNode(node, helpers, depth);
   }
 
   if (node.type === "TEXT") {
     return mapTextNode(node, helpers);
+  }
+
+  if (explicitWidget === "image" && node.imageUrl) {
+    const widget = mapImageNode(node, helpers);
+    applyBorder(widget.settings, node);
+    applyBorderRadius(widget.settings, node);
+    applyShadow(widget.settings, node);
+    return widget;
+  }
+
+  if (explicitWidget === "spacer") {
+    return mapSpacerNode(node, helpers);
+  }
+
+  if (explicitWidget === "divider") {
+    return mapDividerNode(node, helpers);
   }
 
   if (node.type === "IMAGE") {
@@ -1512,6 +1598,7 @@ export function convertFigmaSelectionToElementor(source) {
   const nextId = createIdFactory();
   const report = {
     convertedNodes: 0,
+    hintsApplied: 0,
     warnings: []
   };
   const helpers = {

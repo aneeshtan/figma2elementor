@@ -242,8 +242,61 @@ function extractMotionTokens(name) {
   return motions;
 }
 
+function parseElementorHint(name) {
+  const rawName = String(name || "").trim();
+  const match = rawName.match(/^el-([a-z0-9-]+)(?::(.+))?$/i);
+
+  if (!match) {
+    return null;
+  }
+
+  const type = match[1].toLowerCase();
+  const label = match[2] ? match[2].trim() : "";
+  let role = null;
+  let widgetHint = null;
+
+  if (type === "container") widgetHint = "container";
+  if (type === "button") {
+    widgetHint = "button";
+    role = "button";
+  }
+  if (type === "heading") widgetHint = "heading";
+  if (type === "text-editor") widgetHint = "text-editor";
+  if (type === "image") {
+    widgetHint = "image";
+    role = "media";
+  }
+  if (type === "slider" || type === "slides" || type === "carousel") {
+    widgetHint = "slider";
+    role = "slider";
+  }
+  if (type === "slide") role = "slide";
+  if (type === "track") role = "track";
+  if (type === "dots") role = "dots";
+  if (type === "dot") role = "dot";
+  if (type === "card") role = "card";
+  if (type === "media") role = "media";
+  if (type === "content") role = "content";
+  if (type === "spacer") widgetHint = "spacer";
+  if (type === "divider") widgetHint = "divider";
+
+  return {
+    source: rawName,
+    type,
+    label,
+    role,
+    widgetHint
+  };
+}
+
 function inferSemanticRole(name) {
   const normalizedName = String(name || "").toLowerCase();
+  const elementorHint = parseElementorHint(name);
+
+  if (elementorHint && elementorHint.role) {
+    return elementorHint.role;
+  }
+
   const explicitMatches = normalizedName.match(/\[(slider|carousel|slide|track|dots|dot|button|card|hover-target|prev|next|media|content)\]/g);
 
   if (explicitMatches && explicitMatches.length) {
@@ -267,6 +320,7 @@ function inferSemanticRole(name) {
 
 function extractSemantics(name, variantProperties) {
   const normalizedName = String(name || "").toLowerCase();
+  const elementorHint = parseElementorHint(name);
   let state = firstDefinedVariantState(variantProperties);
 
   if (!state) {
@@ -278,6 +332,8 @@ function extractSemantics(name, variantProperties) {
 
   return {
     role: inferSemanticRole(name),
+    widgetHint: elementorHint ? elementorHint.widgetHint : null,
+    elementorHint,
     state,
     motionTokens: extractMotionTokens(name)
   };
