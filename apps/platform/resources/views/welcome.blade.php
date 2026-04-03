@@ -85,6 +85,10 @@
                     </div>
                 </section>
             </main>
+
+            <div class="mx-auto max-w-6xl px-6 pb-8">
+                <x-platform-footer class="border-t border-white/10 pt-6" />
+            </div>
         </div>
     </body>
 </html>

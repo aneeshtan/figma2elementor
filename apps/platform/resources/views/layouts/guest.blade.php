@@ -55,6 +55,8 @@
                         </div>
                         {{ $slot }}
                     </div>
+
+                    <x-platform-footer class="mx-auto mt-6 max-w-lg" />
                 </section>
             </div>
         </div>
