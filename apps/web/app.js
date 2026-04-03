@@ -24,6 +24,25 @@ let latestTemplate = null;
 let latestJobId = null;
 let bootstrapPayload = null;
 
+function slugify(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildExportFilename(title, uniqueSuffix = "") {
+  const base = slugify(title) || "elementor-template";
+
+  if (uniqueSuffix) {
+    return `${base}-${uniqueSuffix}.json`;
+  }
+
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "z");
+  return `${base}-${stamp}.json`;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -226,7 +245,7 @@ function downloadOutput() {
   const anchor = document.createElement("a");
 
   anchor.href = url;
-  anchor.download = "elementor-template.json";
+  anchor.download = buildExportFilename(latestTemplate.title, latestJobId ? latestJobId.replace(/^job_/, "") : "");
   anchor.click();
   URL.revokeObjectURL(url);
 }

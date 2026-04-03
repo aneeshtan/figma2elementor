@@ -152,6 +152,7 @@
       const detailEl = document.querySelector("#detail");
       const convertButton = document.querySelector("#convert");
       let latestTemplate = null;
+      let latestDownloadName = "elementor-template.json";
       let isLoading = false;
 
       function setStatus(kind, message, detail = "") {
@@ -164,6 +165,25 @@
         isLoading = nextValue;
         convertButton.disabled = nextValue;
         convertButton.textContent = nextValue ? "Converting..." : "Convert";
+      }
+
+      function slugify(value) {
+        return String(value || "")
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      }
+
+      function buildExportFilename(title, uniqueSuffix) {
+        const base = slugify(title) || "elementor-template";
+
+        if (uniqueSuffix) {
+          return `${base}-${uniqueSuffix}.json`;
+        }
+
+        const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "z");
+        return `${base}-${stamp}.json`;
       }
 
       function currentSelection() {
@@ -265,7 +285,7 @@
         const anchor = document.createElement("a");
 
         anchor.href = url;
-        anchor.download = "elementor-template.json";
+        anchor.download = latestDownloadName;
         anchor.click();
         URL.revokeObjectURL(url);
       };
@@ -313,6 +333,10 @@
           setLoading(false);
           if (message.payload && message.payload.template) {
             latestTemplate = message.payload.template;
+            latestDownloadName = buildExportFilename(
+              message.payload.template.title,
+              message.payload.job && message.payload.job.id ? message.payload.job.id.replace(/^job_/, "") : ""
+            );
             outputEl.value = JSON.stringify(message.payload.template, null, 2);
             downloadEl.disabled = false;
             const convertedNodes = message.payload.report ? message.payload.report.convertedNodes : 0;

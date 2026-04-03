@@ -22,6 +22,14 @@ function px(size) {
   };
 }
 
+function slugify(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function box(top = 0, right = 0, bottom = 0, left = 0) {
   return {
     unit: "px",
@@ -35,6 +43,16 @@ function box(top = 0, right = 0, bottom = 0, left = 0) {
 
 function firstSolidFill(node) {
   return (node.fills || []).find((fill) => fill && fill.type === "SOLID" && fill.color);
+}
+
+function firstStroke(node) {
+  return (node.strokes || []).find((stroke) => stroke && stroke.type === "SOLID" && stroke.color);
+}
+
+function firstShadow(node) {
+  return (node.effects || []).find(
+    (effect) => effect && ["DROP_SHADOW", "INNER_SHADOW"].includes(effect.type) && effect.color
+  );
 }
 
 function hasChildren(node) {
@@ -98,6 +116,103 @@ function mapAlignment(value, direction) {
   return "flex-start";
 }
 
+function normalizeColor(value) {
+  if (!value || typeof value !== "string") {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  const match = trimmed.match(/^#([0-9a-f]{8})$/i);
+
+  if (match) {
+    const hex = match[1];
+    const red = parseInt(hex.slice(0, 2), 16);
+    const green = parseInt(hex.slice(2, 4), 16);
+    const blue = parseInt(hex.slice(4, 6), 16);
+    const alpha = parseInt(hex.slice(6, 8), 16) / 255;
+
+    if (alpha >= 0.999) {
+      return `#${hex.slice(0, 6)}`;
+    }
+
+    return `rgba(${red}, ${green}, ${blue}, ${Number(alpha.toFixed(3))})`;
+  }
+
+  return trimmed;
+}
+
+function applyTypography(settings, node) {
+  if (!node.style) {
+    return;
+  }
+
+  if (node.style.fontFamily) {
+    settings.typography_typography = "custom";
+    settings.typography_font_family = node.style.fontFamily;
+  }
+
+  if (node.style.fontWeight) {
+    settings.typography_font_weight = node.style.fontWeight;
+  }
+}
+
+function applyBorder(settings, node) {
+  const stroke = firstStroke(node);
+  if (!stroke) {
+    return;
+  }
+
+  settings.border_border = "solid";
+  settings.border_color = normalizeColor(stroke.color);
+  settings.border_width = box(stroke.weight, stroke.weight, stroke.weight, stroke.weight);
+}
+
+function applyShadow(settings, node) {
+  const shadow = firstShadow(node);
+  if (!shadow) {
+    return;
+  }
+
+  settings.box_shadow_box_shadow_type = "yes";
+  settings.box_shadow_box_shadow = {
+    horizontal: Math.round(shadow.offset?.x || 0),
+    vertical: Math.round(shadow.offset?.y || 0),
+    blur: Math.round(shadow.radius || 0),
+    spread: Math.round(shadow.spread || 0),
+    color: normalizeColor(shadow.color),
+    position: shadow.type === "INNER_SHADOW" ? "inset" : "outline"
+  };
+}
+
+function applyBorderRadius(settings, node) {
+  if (node.cornerRadius) {
+    settings.border_radius = box(node.cornerRadius, node.cornerRadius, node.cornerRadius, node.cornerRadius);
+  }
+}
+
+function applyContainerSurface(settings, node) {
+  const fill = firstSolidFill(node);
+
+  if (fill?.color) {
+    settings.background_background = "classic";
+    settings.background_color = normalizeColor(fill.color);
+  }
+
+  if (node.imageUrl) {
+    settings.background_background = "classic";
+    settings.background_image = {
+      url: node.imageUrl
+    };
+    settings.background_position = "center center";
+    settings.background_repeat = "no-repeat";
+    settings.background_size = "cover";
+  }
+
+  applyBorder(settings, node);
+  applyBorderRadius(settings, node);
+  applyShadow(settings, node);
+}
+
 function isButtonLikeFrame(node) {
   if (!hasChildren(node)) {
     return false;
@@ -120,11 +235,11 @@ function mapTextNode(node, helpers) {
     settings.title = node.characters || "";
     settings.header_size = inferHeadingLevel(fontSize);
     settings.align = (node.style?.textAlignHorizontal || "LEFT").toLowerCase();
-    settings.title_color = fill?.color || "#10211f";
+    settings.title_color = normalizeColor(fill?.color) || "#10211f";
   } else {
     settings.editor = `<p>${(node.characters || "").replace(/\n/g, "<br />")}</p>`;
     settings.align = (node.style?.textAlignHorizontal || "LEFT").toLowerCase();
-    settings.text_color = fill?.color || "#10211f";
+    settings.text_color = normalizeColor(fill?.color) || "#10211f";
   }
 
   if (fontSize) {
@@ -135,6 +250,9 @@ function mapTextNode(node, helpers) {
   if (lineHeightPx) {
     settings.typography_line_height = px(lineHeightPx);
   }
+
+  applyTypography(settings, node);
+  applyShadow(settings, node);
 
   return {
     id: helpers.nextId(node.name),
@@ -167,27 +285,29 @@ function mapButtonNode(node, helpers) {
   const textChild = node.children.find((child) => child.type === "TEXT");
   const fill = firstSolidFill(node);
   const textFill = textChild ? firstSolidFill(textChild) : null;
+  const settings = {
+    _title: node.name || "Button",
+    text: textChild?.characters || node.name || "Click here",
+    background_color: normalizeColor(fill?.color) || "#00695c",
+    button_text_color: normalizeColor(textFill?.color) || "#ffffff",
+    padding: box(node.paddingTop, node.paddingRight, node.paddingBottom, node.paddingLeft)
+  };
+
+  applyBorder(settings, node);
+  applyBorderRadius(settings, node);
+  applyShadow(settings, node);
 
   return {
     id: helpers.nextId(node.name),
     elType: "widget",
     widgetType: "button",
     isInner: false,
-    settings: {
-      _title: node.name || "Button",
-      text: textChild?.characters || node.name || "Click here",
-      background_color: fill?.color || "#00695c",
-      button_text_color: textFill?.color || "#ffffff",
-      border_radius: box(node.cornerRadius, node.cornerRadius, node.cornerRadius, node.cornerRadius),
-      padding: box(node.paddingTop, node.paddingRight, node.paddingBottom, node.paddingLeft)
-    },
+    settings,
     elements: []
   };
 }
 
 function mapDecorativeShape(node, helpers) {
-  const fill = firstSolidFill(node);
-
   return {
     id: helpers.nextId(node.name),
     elType: "container",
@@ -195,10 +315,7 @@ function mapDecorativeShape(node, helpers) {
     settings: {
       _title: node.name || "Shape",
       content_width: "full",
-      background_background: fill ? "classic" : undefined,
-      background_color: fill?.color,
-      min_height: px(node.absoluteBoundingBox?.height || 24),
-      border_radius: box(node.cornerRadius, node.cornerRadius, node.cornerRadius, node.cornerRadius)
+      min_height: px(node.absoluteBoundingBox?.height || 24)
     },
     elements: []
   };
@@ -209,7 +326,6 @@ function mapFrameNode(node, helpers, depth) {
     return mapButtonNode(node, helpers);
   }
 
-  const fill = firstSolidFill(node);
   const direction = node.layoutMode === "HORIZONTAL" ? "row" : "column";
   const elements = (node.children || [])
     .map((child) => mapNode(child, helpers, depth + 1))
@@ -226,18 +342,19 @@ function mapFrameNode(node, helpers, depth) {
     html_tag: depth === 0 ? "section" : "div"
   };
 
-  if (fill?.color) {
-    settings.background_background = "classic";
-    settings.background_color = fill.color;
-  }
-
-  if (node.cornerRadius) {
-    settings.border_radius = box(node.cornerRadius, node.cornerRadius, node.cornerRadius, node.cornerRadius);
-  }
-
   if (node.absoluteBoundingBox?.height) {
     settings.min_height = px(node.absoluteBoundingBox.height);
   }
+
+  if (node.absoluteBoundingBox?.width) {
+    settings.width = {
+      unit: "px",
+      size: Math.round(node.absoluteBoundingBox.width),
+      sizes: []
+    };
+  }
+
+  applyContainerSurface(settings, node);
 
   return {
     id: helpers.nextId(node.name),
@@ -264,15 +381,25 @@ function mapNode(node, helpers, depth = 0) {
   }
 
   if (node.type === "IMAGE") {
-    return mapImageNode(node, helpers);
+    const widget = mapImageNode(node, helpers);
+    applyBorder(widget.settings, node);
+    applyBorderRadius(widget.settings, node);
+    applyShadow(widget.settings, node);
+    return widget;
   }
 
   if (node.type === "RECTANGLE" && node.imageUrl) {
-    return mapImageNode(node, helpers);
+    const widget = mapImageNode(node, helpers);
+    applyBorder(widget.settings, node);
+    applyBorderRadius(widget.settings, node);
+    applyShadow(widget.settings, node);
+    return widget;
   }
 
   if (["RECTANGLE", "ELLIPSE", "VECTOR", "LINE"].includes(node.type)) {
-    return mapDecorativeShape(node, helpers);
+    const shape = mapDecorativeShape(node, helpers);
+    applyContainerSurface(shape.settings, node);
+    return shape;
   }
 
   helpers.report.warnings.push(`Unsupported node type "${node.type}" was skipped.`);
@@ -299,6 +426,7 @@ export function convertFigmaSelectionToElementor(source) {
     report,
     template: {
       title: normalized.name || "Imported Template",
+      slug: slugify(normalized.name || "elementor-template"),
       type: "page",
       version: "0.4",
       page_settings: [],
@@ -306,4 +434,3 @@ export function convertFigmaSelectionToElementor(source) {
     }
   };
 }
-

@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
-import { readFile, writeFile } from "node:fs/promises";
+import crypto from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,10 +28,99 @@ const host = process.env.HOST || "127.0.0.1";
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".webp": "image/webp",
   ".svg": "image/svg+xml"
 };
+
+function slugify(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildExportFilename(title, uniqueSuffix) {
+  const base = slugify(title) || "elementor-template";
+  return `${base}-${uniqueSuffix}.json`;
+}
+
+function getPublicOrigin(req) {
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const forwardedHost = req.headers["x-forwarded-host"];
+  const protocol = Array.isArray(forwardedProto)
+    ? forwardedProto[0]
+    : forwardedProto || (req.socket.encrypted ? "https" : "http");
+  const hostHeader = Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost || req.headers.host || "127.0.0.1:4173";
+  return `${protocol}://${hostHeader}`;
+}
+
+function parseDataUrl(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const match = value.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([a-zA-Z0-9+/=\s]+)$/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    mimeType: match[1],
+    buffer: Buffer.from(match[2].replace(/\s+/g, ""), "base64")
+  };
+}
+
+function extensionForMimeType(mimeType) {
+  if (mimeType === "image/jpeg") return ".jpg";
+  if (mimeType === "image/webp") return ".webp";
+  if (mimeType === "image/svg+xml") return ".svg";
+  return ".png";
+}
+
+async function persistEmbeddedAssets(value, rootDir, publicOrigin) {
+  if (Array.isArray(value)) {
+    return Promise.all(value.map((entry) => persistEmbeddedAssets(entry, rootDir, publicOrigin)));
+  }
+
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  const nextValue = {};
+
+  for (const [key, child] of Object.entries(value)) {
+    if (key === "imageUrl" && typeof child === "string" && child.startsWith("data:image/")) {
+      const parsed = parseDataUrl(child);
+
+      if (!parsed) {
+        nextValue[key] = child;
+        continue;
+      }
+
+      const hash = crypto.createHash("sha1").update(parsed.buffer).digest("hex").slice(0, 12);
+      const assetSlug = slugify(value.name || value.id || "asset") || "asset";
+      const extension = extensionForMimeType(parsed.mimeType);
+      const fileName = `${assetSlug}-${hash}${extension}`;
+      const assetDir = join(rootDir, "data", "assets");
+      const assetPath = join(assetDir, fileName);
+
+      await mkdir(assetDir, { recursive: true });
+      await writeFile(assetPath, parsed.buffer);
+      nextValue[key] = `${publicOrigin}/api/assets/${fileName}`;
+      continue;
+    }
+
+    nextValue[key] = await persistEmbeddedAssets(child, rootDir, publicOrigin);
+  }
+
+  return nextValue;
+}
 
 function jsonResponse(res, statusCode, payload) {
   res.writeHead(statusCode, {
@@ -110,6 +200,7 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   const jobDetailMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)$/);
   const jobDownloadMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)\/download$/);
+  const assetMatch = url.pathname.match(/^\/api\/assets\/([^/]+)$/);
 
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
@@ -145,6 +236,29 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "GET" && assetMatch) {
+      const fileName = assetMatch[1];
+      const assetDir = join(workspaceDir, "data", "assets");
+      const assetPath = join(assetDir, fileName);
+
+      if (!assetPath.startsWith(assetDir)) {
+        jsonResponse(res, 403, {
+          ok: false,
+          error: "Forbidden"
+        });
+        return;
+      }
+
+      const content = await readFile(assetPath);
+      res.writeHead(200, {
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Content-Type": mimeTypes[extname(assetPath)] || "application/octet-stream"
+      });
+      res.end(content);
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/example") {
       const example = JSON.parse(await readFile(examplePath, "utf8"));
       const output = convertFigmaSelectionToElementor(example);
@@ -177,9 +291,10 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && jobDownloadMatch) {
       const token = extractApiKey(req, url);
       const payload = await getJobForToken(dataPath, seedPath, token, jobDownloadMatch[1]);
+      const fileName = buildExportFilename(payload.job.frameName, payload.job.id.replace(/^job_/, ""));
 
       res.writeHead(200, {
-        "Content-Disposition": `attachment; filename="${payload.job.frameName.replace(/[^a-z0-9_-]+/gi, "-").toLowerCase() || "elementor-template"}.json"`,
+        "Content-Disposition": `attachment; filename="${fileName}"`,
         "Content-Type": "application/json; charset=utf-8"
       });
       res.end(JSON.stringify(payload.job.template, null, 2));
@@ -190,7 +305,8 @@ const server = createServer(async (req, res) => {
       const payload = await readRequestBody(req);
       const token = extractApiKey(req, url, payload);
       const source = payload && payload.source ? payload.source : payload;
-      const output = convertFigmaSelectionToElementor(source);
+      const preparedSource = await persistEmbeddedAssets(source, workspaceDir, getPublicOrigin(req));
+      const output = convertFigmaSelectionToElementor(preparedSource);
       const job = await recordConversionJob({
         dataPath,
         seedPath,

@@ -21,6 +21,15 @@ function rgbaToHex(paint) {
   return `#${channelToHex(paint.color.r)}${channelToHex(paint.color.g)}${channelToHex(paint.color.b)}${alpha}`;
 }
 
+function rgbaObjectToHex(color) {
+  if (!color) {
+    return null;
+  }
+
+  const alpha = typeof color.a === "number" ? channelToHex(color.a) : "";
+  return `#${channelToHex(color.r)}${channelToHex(color.g)}${channelToHex(color.b)}${alpha}`;
+}
+
 function extractPaints(node) {
   if (!("fills" in node) || !Array.isArray(node.fills)) {
     return [];
@@ -35,6 +44,37 @@ function extractPaints(node) {
     .filter(Boolean);
 }
 
+function extractStrokes(node) {
+  if (!("strokes" in node) || !Array.isArray(node.strokes)) {
+    return [];
+  }
+
+  return node.strokes
+    .filter((stroke) => stroke.visible !== false)
+    .map((stroke) => ({
+      type: stroke.type,
+      color: stroke.type === "SOLID" ? rgbaToHex(stroke) : null,
+      weight: "strokeWeight" in node && typeof node.strokeWeight === "number" ? node.strokeWeight : 1
+    }))
+    .filter(Boolean);
+}
+
+function extractEffects(node) {
+  if (!("effects" in node) || !Array.isArray(node.effects)) {
+    return [];
+  }
+
+  return node.effects
+    .filter((effect) => effect.visible !== false)
+    .map((effect) => ({
+      type: effect.type,
+      color: rgbaObjectToHex(effect.color),
+      offset: effect.offset ? { x: effect.offset.x, y: effect.offset.y } : { x: 0, y: 0 },
+      radius: typeof effect.radius === "number" ? effect.radius : 0,
+      spread: typeof effect.spread === "number" ? effect.spread : 0
+    }));
+}
+
 function extractBounds(node) {
   return {
     x: "x" in node ? node.x : 0,
@@ -46,6 +86,38 @@ function extractBounds(node) {
 
 function isSceneNodeWithChildren(node) {
   return "children" in node && Array.isArray(node.children);
+}
+
+function hasImageFill(node) {
+  if (!("fills" in node) || !Array.isArray(node.fills)) {
+    return false;
+  }
+
+  return node.fills.some((paint) => paint && paint.visible !== false && paint.type === "IMAGE");
+}
+
+function shouldExportNodeImage(node) {
+  if (node.type === "IMAGE") {
+    return true;
+  }
+
+  return hasImageFill(node) && (!isSceneNodeWithChildren(node) || !node.children.length);
+}
+
+async function extractImageUrl(node) {
+  if (!shouldExportNodeImage(node)) {
+    return null;
+  }
+
+  try {
+    const bytes = await node.exportAsync({
+      format: "PNG"
+    });
+
+    return `data:image/png;base64,${figma.base64Encode(bytes)}`;
+  } catch (error) {
+    return null;
+  }
 }
 
 function serializeTextStyle(node) {
@@ -65,7 +137,7 @@ function serializeTextStyle(node) {
   };
 }
 
-function serializeNode(node) {
+async function serializeNode(node) {
   const payload = {
     id: node.id,
     name: node.name,
@@ -82,21 +154,27 @@ function serializeNode(node) {
     cornerRadius: "cornerRadius" in node && typeof node.cornerRadius === "number" ? node.cornerRadius : 0,
     absoluteBoundingBox: extractBounds(node),
     fills: extractPaints(node),
+    strokes: extractStrokes(node),
+    effects: extractEffects(node),
+    opacity: "opacity" in node && typeof node.opacity === "number" ? node.opacity : 1,
     characters: node.type === "TEXT" ? node.characters : null,
     style: serializeTextStyle(node),
+    imageUrl: await extractImageUrl(node),
     children: []
   };
 
   if (isSceneNodeWithChildren(node)) {
-    payload.children = node.children
-      .filter((child) => child.visible !== false)
-      .map((child) => serializeNode(child));
+    payload.children = await Promise.all(
+      node.children
+        .filter((child) => child.visible !== false)
+        .map((child) => serializeNode(child))
+    );
   }
 
   return payload;
 }
 
-function getSelectionPayload() {
+async function getSelectionPayload() {
   const selection = figma.currentPage.selection;
 
   if (!selection.length) {
@@ -110,15 +188,15 @@ function getSelectionPayload() {
   return {
     name: selection.length === 1 ? selection[0].name : "Figma selection",
     type: "SELECTION",
-    children: selection.map((node) => serializeNode(node))
+    children: await Promise.all(selection.map((node) => serializeNode(node)))
   };
 }
 
-function sendSelection() {
+async function sendSelection() {
   try {
     figma.ui.postMessage({
       type: "selection-data",
-      payload: getSelectionPayload()
+      payload: await getSelectionPayload()
     });
   } catch (error) {
     figma.ui.postMessage({
@@ -132,7 +210,9 @@ function sendSelection() {
 
 async function initializePlugin() {
   try {
-    figma.on("selectionchange", sendSelection);
+    figma.on("selectionchange", () => {
+      void sendSelection();
+    });
     figma.ui.postMessage({
       type: "controller-ready",
       payload: {
@@ -151,12 +231,12 @@ async function initializePlugin() {
 
 figma.ui.onmessage = async (message) => {
   if (message.type === "ui-ready") {
-    sendSelection();
+    await sendSelection();
     return;
   }
 
   if (message.type === "refresh-selection") {
-    sendSelection();
+    await sendSelection();
     return;
   }
 
@@ -170,7 +250,7 @@ figma.ui.onmessage = async (message) => {
         throw new Error("Missing API key. Copy a key from the dashboard and paste it into the plugin.");
       }
 
-      const selectionPayload = getSelectionPayload();
+      const selectionPayload = await getSelectionPayload();
       if (!selectionPayload.children.length) {
         throw new Error("No frame or layer is selected. Select a Figma frame, then click Convert again.");
       }
