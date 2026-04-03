@@ -59,6 +59,19 @@ function hasChildren(node) {
   return Array.isArray(node.children) && node.children.length > 0;
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeAttribute(value) {
+  return escapeHtml(value).replace(/`/g, "&#96;");
+}
+
 function inferHeadingLevel(fontSize = 16) {
   if (fontSize >= 48) return "h1";
   if (fontSize >= 36) return "h2";
@@ -260,6 +273,434 @@ function isShapeNode(node) {
 function getArea(node) {
   const bounds = getNodeBounds(node);
   return bounds.width * bounds.height;
+}
+
+function collectDescendants(node, includeSelf = false) {
+  if (!node) {
+    return [];
+  }
+
+  const items = includeSelf ? [node] : [];
+
+  for (const child of node.children || []) {
+    items.push(child, ...collectDescendants(child));
+  }
+
+  return items;
+}
+
+function isImageLikeNode(node) {
+  return Boolean(node) && (node.type === "IMAGE" || ((node.type === "RECTANGLE" || node.type === "FRAME") && node.imageUrl));
+}
+
+function isTextNode(node) {
+  return node?.type === "TEXT" && node.characters && node.characters.trim();
+}
+
+function isDotNode(node) {
+  if (!node || !["ELLIPSE", "RECTANGLE"].includes(node.type)) {
+    return false;
+  }
+
+  const bounds = getNodeBounds(node);
+  return bounds.width > 0 && bounds.width <= 18 && bounds.height > 0 && bounds.height <= 18;
+}
+
+function isLikelyDotsGroup(node) {
+  if (!hasChildren(node)) {
+    return false;
+  }
+
+  const visibleChildren = (node.children || []).filter((child) => child.visible !== false);
+  return visibleChildren.length >= 2 && visibleChildren.length <= 8 && visibleChildren.every((child) => isDotNode(child));
+}
+
+function getAverageDimension(nodes, key) {
+  if (!nodes.length) {
+    return 0;
+  }
+
+  return nodes.reduce((sum, node) => sum + getNodeBounds(node)[key], 0) / nodes.length;
+}
+
+function areSimilarlySized(nodes) {
+  if (nodes.length < 2) {
+    return false;
+  }
+
+  const averageWidth = getAverageDimension(nodes, "width");
+  const averageHeight = getAverageDimension(nodes, "height");
+
+  return nodes.every((node) => {
+    const bounds = getNodeBounds(node);
+    return (
+      bounds.width >= averageWidth * 0.7 &&
+      bounds.width <= averageWidth * 1.3 &&
+      bounds.height >= averageHeight * 0.7 &&
+      bounds.height <= averageHeight * 1.3
+    );
+  });
+}
+
+function isLikelySlideCard(node) {
+  if (!hasChildren(node)) {
+    return false;
+  }
+
+  const descendants = collectDescendants(node);
+  const images = descendants.filter((child) => isImageLikeNode(child));
+  const textNodes = descendants.filter((child) => isTextNode(child));
+
+  return images.length >= 1 && textNodes.length >= 2;
+}
+
+function getAverageHorizontalGap(nodes) {
+  if (nodes.length < 2) {
+    return 0;
+  }
+
+  const sorted = [...nodes].sort((left, right) => getNodeBounds(left).x - getNodeBounds(right).x);
+  const total = sorted.slice(1).reduce((sum, node, index) => {
+    const previous = getNodeBounds(sorted[index]);
+    const current = getNodeBounds(node);
+    return sum + Math.max(0, current.x - previous.right);
+  }, 0);
+
+  return total / Math.max(sorted.length - 1, 1);
+}
+
+function getViewportWidth(node, fallbackNode) {
+  const primaryWidth = getNodeBounds(node).width;
+  if (primaryWidth) {
+    return primaryWidth;
+  }
+
+  return getNodeBounds(fallbackNode).width;
+}
+
+function findRepeatedCardTrack(node, viewportNode = node) {
+  if (!hasChildren(node)) {
+    return null;
+  }
+
+  const cardChildren = (node.children || []).filter((child) => child.visible !== false && isLikelySlideCard(child));
+  if (cardChildren.length < 2 || !areSimilarlySized(cardChildren)) {
+    return null;
+  }
+
+  const sortedCards = [...cardChildren].sort((left, right) => getNodeBounds(left).x - getNodeBounds(right).x);
+  const first = getNodeBounds(sortedCards[0]);
+  const last = getNodeBounds(sortedCards[sortedCards.length - 1]);
+  const trackSpan = last.right - first.x;
+  const gap = getAverageHorizontalGap(sortedCards);
+  const viewportWidth = getViewportWidth(node, viewportNode);
+
+  if (!node.clipsContent && trackSpan <= viewportWidth * 1.04 && gap <= viewportWidth * 0.04) {
+    return null;
+  }
+
+  return {
+    trackNode: node,
+    cards: sortedCards,
+    gap,
+    viewportWidth
+  };
+}
+
+function findSliderPattern(node) {
+  if (!hasChildren(node)) {
+    return null;
+  }
+
+  const visibleChildren = (node.children || []).filter((child) => child.visible !== false);
+  const headingNode = visibleChildren.find((child) => isTextNode(child) && inferTextWidget(child) === "heading");
+  const dotsNode = visibleChildren.find((child) => isLikelyDotsGroup(child));
+  const trackCandidates = visibleChildren.filter((child) => child !== headingNode && child !== dotsNode);
+  const candidates = [];
+
+  for (const candidate of trackCandidates) {
+    const directMatch = findRepeatedCardTrack(candidate, candidate);
+    if (directMatch) {
+      candidates.push(directMatch);
+    }
+
+    for (const nestedChild of candidate.children || []) {
+      const nestedMatch = findRepeatedCardTrack(nestedChild, candidate);
+      if (nestedMatch) {
+        candidates.push(nestedMatch);
+      }
+    }
+  }
+
+  const selfMatch = findRepeatedCardTrack(node, node);
+  if (selfMatch) {
+    candidates.push(selfMatch);
+  }
+
+  const bestMatch = candidates.sort((left, right) => right.cards.length - left.cards.length)[0];
+  if (!bestMatch) {
+    return null;
+  }
+
+  const averageCardWidth = getAverageDimension(bestMatch.cards, "width");
+  const visibleSlides = Math.max(1, Math.min(3, Math.round(bestMatch.viewportWidth / Math.max(averageCardWidth, 1))));
+
+  if (!dotsNode && bestMatch.cards.length <= visibleSlides) {
+    return null;
+  }
+
+  return {
+    headingNode,
+    dotsNode,
+    trackNode: bestMatch.trackNode,
+    cards: bestMatch.cards,
+    gap: bestMatch.gap,
+    visibleSlides
+  };
+}
+
+function getButtonLikeNodes(node) {
+  return collectDescendants(node).filter(
+    (child) =>
+      ["FRAME", "GROUP", "COMPONENT", "INSTANCE"].includes(child.type) &&
+      (isButtonLikeFrame(child) ||
+        ((child.name || "").toLowerCase().includes("button") && collectDescendants(child).some((descendant) => descendant.type === "TEXT")))
+  );
+}
+
+function pickPanelBackgroundNode(node, imageNode) {
+  const imageBounds = getNodeBounds(imageNode);
+  const solidShapes = collectDescendants(node)
+    .filter((child) => isShapeNode(child) && !child.imageUrl && firstSolidFill(child)?.color)
+    .sort((left, right) => getArea(right) - getArea(left));
+
+  return solidShapes.find((shape) => {
+    const bounds = getNodeBounds(shape);
+    return bounds.x >= imageBounds.right - 24 && bounds.height >= imageBounds.height * 0.7;
+  }) || solidShapes[0] || null;
+}
+
+function extractButtonData(node) {
+  const buttonNode = getButtonLikeNodes(node)[0];
+  if (!buttonNode) {
+    return null;
+  }
+
+  const textChild = collectDescendants(buttonNode, true).find((child) => child.type === "TEXT" && child.characters?.trim());
+  const fill = firstSolidFill(buttonNode);
+  const textFill = textChild ? firstSolidFill(textChild) : null;
+
+  return {
+    text: textChild?.characters?.trim() || "Read more",
+    backgroundColor: normalizeColor(fill?.color) || "#be9f3f",
+    textColor: normalizeColor(textFill?.color) || "#ffffff",
+    hoverBackgroundColor: shiftColor(fill?.color || "#be9f3f", -0.12),
+    radius: buttonNode.cornerRadius || 6
+  };
+}
+
+function extractSlideCardData(node) {
+  const descendants = collectDescendants(node);
+  const imageNode = descendants
+    .filter((child) => isImageLikeNode(child))
+    .sort((left, right) => getArea(right) - getArea(left))[0];
+
+  if (!imageNode) {
+    return null;
+  }
+
+  const panelNode = pickPanelBackgroundNode(node, imageNode);
+  const textNodes = descendants
+    .filter((child) => isTextNode(child))
+    .sort((left, right) => {
+      const sizeDelta = (right.style?.fontSize || 0) - (left.style?.fontSize || 0);
+      if (Math.abs(sizeDelta) > 0.5) {
+        return sizeDelta;
+      }
+
+      return getNodeBounds(left).y - getNodeBounds(right).y;
+    });
+  const button = extractButtonData(node);
+  const titleNode = textNodes[0] || null;
+  const bodyNode = textNodes.find(
+    (child) => child !== titleNode && (!button || child.characters.trim() !== button.text.trim())
+  ) || textNodes[1] || null;
+  const panelFill = firstSolidFill(panelNode);
+  const titleFill = titleNode ? firstSolidFill(titleNode) : null;
+  const bodyFill = bodyNode ? firstSolidFill(bodyNode) : null;
+  const imageBounds = getNodeBounds(imageNode);
+  const panelBounds = panelNode ? getNodeBounds(panelNode) : null;
+
+  return {
+    title: titleNode?.characters?.trim() || node.name || "Slide",
+    body: bodyNode?.characters?.trim() || "",
+    imageUrl: imageNode.imageUrl,
+    panelColor: normalizeColor(panelFill?.color) || "#c2e3ed",
+    titleColor: normalizeColor(titleFill?.color) || "#303351",
+    bodyColor: normalizeColor(bodyFill?.color) || "#012633",
+    panelRadius: panelNode?.cornerRadius || node.cornerRadius || 12,
+    imageRadius: imageNode.cornerRadius || node.cornerRadius || 12,
+    button,
+    minHeight: Math.max(imageBounds.height || 0, panelBounds?.height || 0, 240)
+  };
+}
+
+function createHtmlWidgetNode(name, html, helpers) {
+  return {
+    id: helpers.nextId(`${name}-html`),
+    elType: "widget",
+    widgetType: "html",
+    isInner: false,
+    settings: {
+      _title: name || "HTML",
+      html
+    },
+    elements: []
+  };
+}
+
+function buildSliderHtml(node, slides, options, helpers) {
+  const sliderId = `f2e-slider-${helpers.nextId(node.name || "slider")}`;
+  const visibleSlides = Math.max(1, Number(options.visibleSlides || 1));
+  const gap = Math.max(16, Math.round(options.gap || 24));
+  const dotCount = Math.max(1, slides.length - visibleSlides + 1);
+  const dots = Array.from({ length: dotCount }, (_, index) => index);
+  const slideMarkup = slides
+    .map((slide, index) => {
+      const buttonMarkup = slide.button
+        ? `<button class="f2e-slider__button" type="button" style="--f2e-btn-bg:${escapeAttribute(slide.button.backgroundColor)};--f2e-btn-bg-hover:${escapeAttribute(slide.button.hoverBackgroundColor)};--f2e-btn-color:${escapeAttribute(slide.button.textColor)};--f2e-btn-radius:${Number(slide.button.radius || 6)}px;">${escapeHtml(slide.button.text)}</button>`
+        : "";
+
+      return `
+        <article class="f2e-slider__slide" data-slide-index="${index}">
+          <div class="f2e-slider__card" style="--f2e-panel:${escapeAttribute(slide.panelColor)};--f2e-panel-radius:${Number(slide.panelRadius || 12)}px;--f2e-image-radius:${Number(slide.imageRadius || 12)}px;--f2e-title:${escapeAttribute(slide.titleColor)};--f2e-body:${escapeAttribute(slide.bodyColor)};--f2e-card-height:${Math.round(slide.minHeight)}px;">
+            <div class="f2e-slider__media">
+              <img src="${escapeAttribute(slide.imageUrl)}" alt="${escapeAttribute(slide.title)}" />
+            </div>
+            <div class="f2e-slider__content">
+              <h3>${escapeHtml(slide.title)}</h3>
+              <p>${escapeHtml(slide.body)}</p>
+              ${buttonMarkup}
+            </div>
+          </div>
+        </article>`;
+    })
+    .join("");
+  const dotsMarkup = dots
+    .map(
+      (index) =>
+        `<button class="f2e-slider__dot${index === 0 ? " is-active" : ""}" type="button" aria-label="Go to slide ${index + 1}" data-dot-index="${index}"></button>`
+    )
+    .join("");
+
+  return `
+<div id="${sliderId}" class="f2e-slider" data-visible-slides="${visibleSlides}" data-gap="${gap}">
+  <div class="f2e-slider__viewport">
+    <div class="f2e-slider__track">
+      ${slideMarkup}
+    </div>
+  </div>
+  <div class="f2e-slider__dots" role="tablist" aria-label="${escapeAttribute(node.name || "Slider navigation")}">
+    ${dotsMarkup}
+  </div>
+</div>
+<style>
+  #${sliderId}{--f2e-gap:${gap}px;--f2e-visible:${visibleSlides};width:100%}
+  #${sliderId} .f2e-slider__viewport{overflow:hidden;width:100%}
+  #${sliderId} .f2e-slider__track{display:flex;gap:var(--f2e-gap);transition:transform .45s ease}
+  #${sliderId} .f2e-slider__slide{flex:0 0 calc((100% - (var(--f2e-gap) * (var(--f2e-visible) - 1))) / var(--f2e-visible))}
+  #${sliderId} .f2e-slider__card{display:grid;grid-template-columns:minmax(220px,46%) 1fr;min-height:var(--f2e-card-height);border-radius:var(--f2e-panel-radius);overflow:hidden;box-shadow:0 16px 40px rgba(14,30,37,.08);transform:translateY(0);transition:transform .28s ease,box-shadow .28s ease;background:var(--f2e-panel)}
+  #${sliderId} .f2e-slider__card:hover{transform:translateY(-6px);box-shadow:0 22px 48px rgba(14,30,37,.15)}
+  #${sliderId} .f2e-slider__media{min-height:100%}
+  #${sliderId} .f2e-slider__media img{display:block;width:100%;height:100%;min-height:var(--f2e-card-height);object-fit:cover;border-radius:var(--f2e-image-radius) 0 0 var(--f2e-image-radius)}
+  #${sliderId} .f2e-slider__content{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:34px 28px;background:var(--f2e-panel)}
+  #${sliderId} .f2e-slider__content h3{margin:0 0 16px;color:var(--f2e-title);font-size:clamp(24px,2vw,36px);line-height:1.12}
+  #${sliderId} .f2e-slider__content p{margin:0;color:var(--f2e-body);font-size:18px;line-height:1.5}
+  #${sliderId} .f2e-slider__button{margin-top:28px;border:0;border-radius:var(--f2e-btn-radius);background:var(--f2e-btn-bg);color:var(--f2e-btn-color);padding:12px 22px;font-size:16px;font-weight:700;line-height:1.1;cursor:pointer;transition:background-color .2s ease,transform .2s ease}
+  #${sliderId} .f2e-slider__button:hover{background:var(--f2e-btn-bg-hover);transform:translateY(-1px)}
+  #${sliderId} .f2e-slider__dots{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:20px}
+  #${sliderId} .f2e-slider__dot{width:12px;height:12px;border-radius:999px;border:0;background:rgba(48,51,81,.2);cursor:pointer;transition:transform .2s ease,background-color .2s ease}
+  #${sliderId} .f2e-slider__dot.is-active{background:#303351;transform:scale(1.08)}
+  @media (max-width: 1024px){
+    #${sliderId}{--f2e-visible:1}
+    #${sliderId} .f2e-slider__card{grid-template-columns:1fr}
+    #${sliderId} .f2e-slider__media img{border-radius:var(--f2e-image-radius) var(--f2e-image-radius) 0 0;min-height:260px}
+  }
+</style>
+<script>
+  (function() {
+    var root = document.getElementById(${JSON.stringify(sliderId)});
+    if (!root) return;
+    var viewport = root.querySelector('.f2e-slider__viewport');
+    var track = root.querySelector('.f2e-slider__track');
+    var slides = Array.prototype.slice.call(root.querySelectorAll('.f2e-slider__slide'));
+    var dots = Array.prototype.slice.call(root.querySelectorAll('.f2e-slider__dot'));
+    if (!viewport || !track || !slides.length) return;
+    function getPerView() {
+      return window.innerWidth <= 1024 ? 1 : Number(root.getAttribute('data-visible-slides') || 1);
+    }
+    function getMaxIndex() {
+      return Math.max(0, slides.length - getPerView());
+    }
+    function setActive(index) {
+      var maxIndex = getMaxIndex();
+      var target = Math.max(0, Math.min(index, maxIndex));
+      var gap = parseFloat(getComputedStyle(track).gap || root.getAttribute('data-gap') || 0);
+      var width = slides[0].getBoundingClientRect().width + gap;
+      track.style.transform = 'translateX(' + (target * width * -1) + 'px)';
+      dots.forEach(function(dot, dotIndex) {
+        dot.classList.toggle('is-active', dotIndex === target);
+      });
+    }
+    dots.forEach(function(dot) {
+      dot.addEventListener('click', function() {
+        setActive(Number(dot.getAttribute('data-dot-index') || 0));
+      });
+    });
+    window.addEventListener('resize', function() {
+      setActive(Number((root.querySelector('.f2e-slider__dot.is-active') || dots[0] || { getAttribute: function() { return 0; } }).getAttribute('data-dot-index') || 0));
+    });
+    setActive(0);
+  })();
+</script>`;
+}
+
+function mapSliderSection(node, helpers, depth, sliderPattern) {
+  const slideData = sliderPattern.cards.map((card) => extractSlideCardData(card)).filter(Boolean);
+
+  if (slideData.length < 2) {
+    return null;
+  }
+
+  const elements = [];
+  if (sliderPattern.headingNode) {
+    elements.push(mapTextNode(sliderPattern.headingNode, helpers));
+  }
+
+  elements.push(
+    createHtmlWidgetNode(
+      `${node.name || "Slider"} Carousel`,
+      buildSliderHtml(node, slideData, { visibleSlides: sliderPattern.visibleSlides, gap: sliderPattern.gap }, helpers),
+      helpers
+    )
+  );
+
+  return {
+    id: helpers.nextId(node.name),
+    elType: "container",
+    isInner: depth > 0,
+    settings: {
+      _title: node.name || "Slider Section",
+      content_width: "full",
+      flex_direction: "column",
+      flex_gap: px(24),
+      flex_align_items: "stretch",
+      justify_content: "flex-start",
+      padding: box(node.paddingTop, node.paddingRight, node.paddingBottom, node.paddingLeft),
+      html_tag: depth === 0 ? "section" : "div"
+    },
+    elements
+  };
 }
 
 function isContainedWithin(inner, outer, tolerance = 8) {
@@ -667,6 +1108,14 @@ function mapDecorativeShape(node, helpers) {
 function mapFrameNode(node, helpers, depth) {
   if (isButtonLikeFrame(node)) {
     return mapButtonNode(node, helpers);
+  }
+
+  const sliderPattern = findSliderPattern(node);
+  if (sliderPattern) {
+    const sliderSection = mapSliderSection(node, helpers, depth, sliderPattern);
+    if (sliderSection) {
+      return sliderSection;
+    }
   }
 
   const overlayBackgroundChild = findOverlayBackgroundChild(node);

@@ -152,6 +152,7 @@ async function serializeNode(node) {
     paddingBottom: "paddingBottom" in node ? node.paddingBottom : 0,
     paddingLeft: "paddingLeft" in node ? node.paddingLeft : 0,
     cornerRadius: "cornerRadius" in node && typeof node.cornerRadius === "number" ? node.cornerRadius : 0,
+    clipsContent: "clipsContent" in node ? Boolean(node.clipsContent) : false,
     absoluteBoundingBox: extractBounds(node),
     fills: extractPaints(node),
     strokes: extractStrokes(node),
