@@ -254,6 +254,7 @@ function parseElementorHint(name) {
   const label = match[2] ? match[2].trim() : "";
   let role = null;
   let widgetHint = null;
+  let fieldType = null;
 
   if (type === "container") widgetHint = "container";
   if (type === "button") {
@@ -275,6 +276,50 @@ function parseElementorHint(name) {
   if (type === "dots") role = "dots";
   if (type === "dot") role = "dot";
   if (type === "card") role = "card";
+  if (type === "form") {
+    widgetHint = "form";
+    role = "form";
+  }
+  if (type === "input") {
+    widgetHint = "form-field";
+    role = "field";
+    fieldType = "text";
+  }
+  if (type === "email") {
+    widgetHint = "form-field";
+    role = "field";
+    fieldType = "email";
+  }
+  if (type === "tel" || type === "phone") {
+    widgetHint = "form-field";
+    role = "field";
+    fieldType = "tel";
+  }
+  if (type === "select") {
+    widgetHint = "form-field";
+    role = "field";
+    fieldType = "select";
+  }
+  if (type === "textarea") {
+    widgetHint = "form-field";
+    role = "field";
+    fieldType = "textarea";
+  }
+  if (type === "checkbox") {
+    widgetHint = "form-field";
+    role = "field";
+    fieldType = "checkbox";
+  }
+  if (type === "radio") {
+    widgetHint = "form-field";
+    role = "field";
+    fieldType = "radio";
+  }
+  if (type === "submit") {
+    widgetHint = "button";
+    role = "button";
+    fieldType = "submit";
+  }
   if (type === "media") role = "media";
   if (type === "content") role = "content";
   if (type === "spacer") widgetHint = "spacer";
@@ -285,7 +330,8 @@ function parseElementorHint(name) {
     type,
     label,
     role,
-    widgetHint
+    widgetHint,
+    fieldType
   };
 }
 

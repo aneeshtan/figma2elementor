@@ -123,6 +123,7 @@ Current platform capabilities:
 For higher-fidelity exports, the plugin and converter now understand a small naming contract:
 
 - `el-container:name`, `el-button:name`, `el-heading:name`, `el-text-editor:name`, `el-image:name`, `el-divider:name`, `el-spacer:name`
+- `el-form:name` with direct children like `el-input:name`, `el-email:email`, `el-tel:phone`, `el-select:service`, `el-textarea:message`, `el-submit:submit`
 - `[slider]` or `[carousel]` on the root slider frame
 - `[track]` on the slide track wrapper
 - `[slide]` or `[card]` on each repeated slide card

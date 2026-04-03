@@ -75,9 +75,19 @@ function getSemantics(node) {
   return node && node.semantics && typeof node.semantics === "object" ? node.semantics : {};
 }
 
+function getElementorHint(node) {
+  const semantics = getSemantics(node);
+  return semantics && semantics.elementorHint && typeof semantics.elementorHint === "object" ? semantics.elementorHint : null;
+}
+
 function getWidgetHint(node) {
   const semantics = getSemantics(node);
   return typeof semantics.widgetHint === "string" && semantics.widgetHint ? semantics.widgetHint : null;
+}
+
+function getFieldType(node) {
+  const hint = getElementorHint(node);
+  return hint && typeof hint.fieldType === "string" && hint.fieldType ? hint.fieldType : null;
 }
 
 function getNodeRole(node) {
@@ -846,6 +856,247 @@ function createHtmlWidgetNode(name, html, helpers) {
   };
 }
 
+function getExplicitFieldNodes(node) {
+  return (node.children || []).filter((child) => child.visible !== false && (getWidgetHint(child) === "form-field" || getFieldType(child) === "submit"));
+}
+
+function extractFieldTextNodes(node) {
+  return collectDescendants(node, true)
+    .filter((child) => isTextNode(child))
+    .sort((left, right) => {
+      const topDelta = getNodeBounds(left).y - getNodeBounds(right).y;
+      if (Math.abs(topDelta) > 4) {
+        return topDelta;
+      }
+
+      return getNodeBounds(left).x - getNodeBounds(right).x;
+    });
+}
+
+function cleanFieldLabel(value, fallback = "Field") {
+  const text = String(value || fallback).trim();
+  return text || fallback;
+}
+
+function slugFromLabel(value, fallback = "field") {
+  const slug = slugify(value || fallback);
+  return slug || fallback;
+}
+
+function extractFieldOptions(node, placeholder) {
+  const texts = extractFieldTextNodes(node)
+    .map((child) => child.characters.trim())
+    .filter(Boolean);
+  const unique = [];
+
+  for (let index = 0; index < texts.length; index += 1) {
+    const value = texts[index];
+
+    if (placeholder && value === placeholder) {
+      continue;
+    }
+
+    if (!unique.includes(value)) {
+      unique.push(value);
+    }
+  }
+
+  return unique.length ? unique : ["Option 1", "Option 2", "Option 3"];
+}
+
+function extractFormFieldData(node) {
+  const fieldType = getFieldType(node);
+  if (!fieldType) {
+    return null;
+  }
+
+  const bounds = getNodeBounds(node);
+  const fill = firstSolidFill(node);
+  const stroke = firstStroke(node);
+  const textNodes = extractFieldTextNodes(node);
+  const labelText = getElementorHint(node)?.label || node.name || "Field";
+  const cleanedLabel = cleanFieldLabel(labelText.replace(/^el-[a-z0-9-]+:/i, ""), "Field");
+  const placeholderNode = textNodes[textNodes.length - 1] || null;
+  const placeholder = placeholderNode ? placeholderNode.characters.trim() : cleanedLabel;
+  const textFill = placeholderNode ? firstSolidFill(placeholderNode) : null;
+  const required = /\*/.test(cleanedLabel) || /\brequired\b/i.test(node.name || "");
+  const role = fieldType === "submit" ? "submit" : "field";
+  const base = {
+    id: slugFromLabel(cleanedLabel, fieldType),
+    role,
+    type: fieldType,
+    label: cleanedLabel.replace(/\s*\*+\s*$/, ""),
+    placeholder,
+    required,
+    width: Math.round(bounds.width || 0),
+    height: Math.round(bounds.height || 0),
+    backgroundColor: normalizeColor(fill?.color) || "rgba(255,255,255,0.04)",
+    borderColor: normalizeColor(stroke?.color) || "rgba(255,255,255,0.12)",
+    textColor: normalizeColor(textFill?.color) || "#e2e8f0",
+    radius: node.cornerRadius || 10
+  };
+
+  if (fieldType === "textarea") {
+    base.rows = Math.max(4, Math.round((bounds.height || 120) / 32));
+  }
+
+  if (fieldType === "select") {
+    base.options = extractFieldOptions(node, placeholder);
+  }
+
+  if (fieldType === "submit") {
+    base.text = placeholder || cleanedLabel || "Submit";
+    base.hoverBackgroundColor = shiftColor(fill?.color || "#be9f3f", -0.12);
+    base.textColor = normalizeColor(textFill?.color) || "#ffffff";
+    applyInteractiveHover(base, node, "button");
+  }
+
+  return base;
+}
+
+function buildFormRows(fields) {
+  const sorted = [...fields].sort((left, right) => left.top - right.top || left.left - right.left);
+  const rows = [];
+
+  for (let index = 0; index < sorted.length; index += 1) {
+    const field = sorted[index];
+    let row = rows.find((entry) => Math.abs(entry.centerY - field.centerY) <= Math.max(18, field.height * 0.35 || 18));
+
+    if (!row) {
+      row = {
+        centerY: field.centerY,
+        fields: []
+      };
+      rows.push(row);
+    }
+
+    row.fields.push(field);
+  }
+
+  return rows
+    .sort((left, right) => left.centerY - right.centerY)
+    .map((row) => row.fields.sort((left, right) => left.left - right.left));
+}
+
+function renderFormField(field) {
+  const required = field.required ? " required" : "";
+  const fieldLabel = field.label ? `<label for="${escapeAttribute(field.id)}">${escapeHtml(field.label)}</label>` : "";
+  const commonStyle = `style="--f2e-field-bg:${escapeAttribute(field.backgroundColor)};--f2e-field-border:${escapeAttribute(field.borderColor)};--f2e-field-color:${escapeAttribute(field.textColor)};--f2e-field-radius:${Number(field.radius || 10)}px;"`;
+
+  if (field.role === "submit") {
+    return `
+      <div class="f2e-form__submit">
+        <button type="submit" class="f2e-form__button" style="--f2e-btn-bg:${escapeAttribute(field.backgroundColor)};--f2e-btn-bg-hover:${escapeAttribute(field.hoverBackgroundColor || shiftColor(field.backgroundColor, -0.12))};--f2e-btn-color:${escapeAttribute(field.textColor)};--f2e-btn-radius:${Number(field.radius || 10)}px;">${escapeHtml(field.text || field.label || "Submit")}</button>
+      </div>`;
+  }
+
+  if (field.type === "textarea") {
+    return `
+      <div class="f2e-form__field" ${commonStyle}>
+        ${fieldLabel}
+        <textarea id="${escapeAttribute(field.id)}" name="${escapeAttribute(field.id)}" rows="${Math.max(4, Number(field.rows || 4))}" placeholder="${escapeAttribute(field.placeholder || "")}"${required}></textarea>
+      </div>`;
+  }
+
+  if (field.type === "select") {
+    const options = (field.options || []).map((option, index) => {
+      const selected = index === 0 ? " selected" : "";
+      return `<option value="${escapeAttribute(slugFromLabel(option, `option-${index + 1}`))}"${selected}>${escapeHtml(option)}</option>`;
+    });
+
+    return `
+      <div class="f2e-form__field" ${commonStyle}>
+        ${fieldLabel}
+        <select id="${escapeAttribute(field.id)}" name="${escapeAttribute(field.id)}"${required}>
+          ${options.join("")}
+        </select>
+      </div>`;
+  }
+
+  return `
+    <div class="f2e-form__field" ${commonStyle}>
+      ${fieldLabel}
+      <input id="${escapeAttribute(field.id)}" name="${escapeAttribute(field.id)}" type="${escapeAttribute(field.type || "text")}" placeholder="${escapeAttribute(field.placeholder || "")}"${required} />
+    </div>`;
+}
+
+function buildFormHtml(node, fields, helpers) {
+  const formId = `f2e-form-${helpers.nextId(node.name || "form")}`;
+  const rows = buildFormRows(fields);
+  const nodeFill = firstSolidFill(node);
+  const nodeStroke = firstStroke(node);
+  const nodeShadow = firstShadow(node);
+  const panelColor = normalizeColor(nodeFill?.color) || "transparent";
+  const borderColor = normalizeColor(nodeStroke?.color) || "rgba(255,255,255,0.12)";
+  const shadowColor = normalizeColor(nodeShadow?.color) || "rgba(15,23,42,0.12)";
+  const rowMarkup = rows
+    .map((row) => {
+      const totalWidth = row.reduce((sum, field) => sum + Math.max(field.width, 1), 0);
+      const columns = row
+        .map((field) => {
+          const width = totalWidth > 0 ? `${((field.width / totalWidth) * 100).toFixed(3)}%` : "1fr";
+          return `<div class="f2e-form__cell" style="flex-basis:${width}">${renderFormField(field)}</div>`;
+        })
+        .join("");
+
+      return `<div class="f2e-form__row">${columns}</div>`;
+    })
+    .join("");
+
+  return `
+<form id="${formId}" class="f2e-form" action="#" method="post">
+  ${rowMarkup}
+</form>
+<style>
+  #${formId}{display:flex;flex-direction:column;gap:18px;width:100%;padding:${Math.round(node.paddingTop || 0)}px ${Math.round(node.paddingRight || 0)}px ${Math.round(node.paddingBottom || 0)}px ${Math.round(node.paddingLeft || 0)}px;border:1px solid ${escapeAttribute(borderColor)};border-radius:${Number(node.cornerRadius || 0)}px;background:${escapeAttribute(panelColor)};box-shadow:0 18px 40px ${escapeAttribute(shadowColor)}}
+  #${formId} .f2e-form__row{display:flex;gap:18px;flex-wrap:wrap}
+  #${formId} .f2e-form__cell{flex:1 1 220px;min-width:0}
+  #${formId} .f2e-form__field{display:flex;flex-direction:column;gap:8px}
+  #${formId} label{font-size:13px;font-weight:600;line-height:1.4;color:#cbd5e1}
+  #${formId} input,#${formId} textarea,#${formId} select{width:100%;appearance:none;border:1px solid var(--f2e-field-border);background:var(--f2e-field-bg);color:var(--f2e-field-color);border-radius:var(--f2e-field-radius);padding:14px 16px;font-size:15px;line-height:1.4;outline:none;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
+  #${formId} textarea{resize:vertical;min-height:132px}
+  #${formId} input::placeholder,#${formId} textarea::placeholder{color:color-mix(in srgb, var(--f2e-field-color) 58%, transparent)}
+  #${formId} input:focus,#${formId} textarea:focus,#${formId} select:focus{border-color:#f24e1e;box-shadow:0 0 0 4px rgba(242,78,30,.12)}
+  #${formId} .f2e-form__submit{display:flex;align-items:flex-start}
+  #${formId} .f2e-form__button{border:0;border-radius:var(--f2e-btn-radius);background:var(--f2e-btn-bg);color:var(--f2e-btn-color);padding:13px 24px;font-size:15px;font-weight:700;line-height:1.1;cursor:pointer;transition:background-color .2s ease,transform .2s ease,box-shadow .2s ease;box-shadow:0 12px 24px rgba(15,23,42,.12)}
+  #${formId} .f2e-form__button:hover{background:var(--f2e-btn-bg-hover);transform:translateY(-2px)}
+  @media (max-width: 767px){
+    #${formId} .f2e-form__row{flex-direction:column}
+    #${formId} .f2e-form__cell{flex-basis:auto}
+  }
+</style>`;
+}
+
+function mapFormNode(node, helpers) {
+  const fieldNodes = getExplicitFieldNodes(node);
+  if (!fieldNodes.length) {
+    return null;
+  }
+
+  const fields = fieldNodes
+    .map((child) => {
+      const data = extractFormFieldData(child);
+      if (!data) {
+        return null;
+      }
+
+      const bounds = getNodeBounds(child);
+      return {
+        ...data,
+        top: bounds.y,
+        left: bounds.x,
+        centerY: bounds.y + bounds.height / 2
+      };
+    })
+    .filter(Boolean);
+
+  if (!fields.length) {
+    return null;
+  }
+
+  return createHtmlWidgetNode(`${node.name || "Form"} Form`, buildFormHtml(node, fields, helpers), helpers);
+}
+
 function mapSpacerNode(node, helpers) {
   const bounds = getNodeBounds(node);
 
@@ -1454,6 +1705,13 @@ function mapDecorativeShape(node, helpers) {
 
 function mapFrameNode(node, helpers, depth) {
   const explicitWidget = getWidgetHint(node);
+
+  if (explicitWidget === "form" || hasRole(node, "form")) {
+    const form = mapFormNode(node, helpers);
+    if (form) {
+      return form;
+    }
+  }
 
   if (explicitWidget === "button") {
     return mapButtonNode(node, helpers);
