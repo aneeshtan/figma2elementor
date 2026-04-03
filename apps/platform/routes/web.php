@@ -10,6 +10,10 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+Route::get('/docs', function () {
+    return view('docs.index');
+})->name('docs');
+
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::post('/api-keys', [ApiKeyController::class, 'store'])->name('api-keys.store');
