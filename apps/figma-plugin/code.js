@@ -133,7 +133,12 @@ function sendSelection() {
 async function initializePlugin() {
   try {
     figma.on("selectionchange", sendSelection);
-    sendSelection();
+    figma.ui.postMessage({
+      type: "controller-ready",
+      payload: {
+        pageName: figma.currentPage ? figma.currentPage.name : "Unknown page"
+      }
+    });
   } catch (error) {
     figma.ui.postMessage({
       type: "plugin-error",
@@ -143,8 +148,6 @@ async function initializePlugin() {
     });
   }
 }
-
-initializePlugin();
 
 figma.ui.onmessage = async (message) => {
   if (message.type === "ui-ready") {
@@ -216,3 +219,5 @@ figma.ui.onmessage = async (message) => {
     }
   }
 };
+
+initializePlugin();

@@ -174,15 +174,32 @@
         }
       }
 
-      endpointEl.value = localStorage.getItem("f2e:endpoint") || endpointEl.value;
-      apiKeyEl.value = localStorage.getItem("f2e:api-key") || apiKeyEl.value;
+      function readStoredValue(key, fallbackValue) {
+        try {
+          const stored = window.localStorage.getItem(key);
+          return stored || fallbackValue;
+        } catch (error) {
+          return fallbackValue;
+        }
+      }
+
+      function writeStoredValue(key, value) {
+        try {
+          window.localStorage.setItem(key, value);
+        } catch (error) {
+          // Figma may disable storage inside the plugin iframe.
+        }
+      }
+
+      endpointEl.value = readStoredValue("f2e:endpoint", endpointEl.value);
+      apiKeyEl.value = readStoredValue("f2e:api-key", apiKeyEl.value);
 
       endpointEl.oninput = () => {
-        localStorage.setItem("f2e:endpoint", endpointEl.value.trim());
+        writeStoredValue("f2e:endpoint", endpointEl.value.trim());
       };
 
       apiKeyEl.oninput = () => {
-        localStorage.setItem("f2e:api-key", apiKeyEl.value.trim());
+        writeStoredValue("f2e:api-key", apiKeyEl.value.trim());
       };
 
       document.querySelector("#refresh").onclick = () => {
@@ -269,6 +286,15 @@
             selectedCount
               ? `Selected root: ${message.payload.name || "Untitled selection"}\nSelected nodes: ${selectedCount}`
               : "Select a frame or layer in Figma, then click Convert."
+          );
+          return;
+        }
+
+        if (message.type === "controller-ready") {
+          setStatus(
+            "loading",
+            "Plugin controller ready.",
+            `Connected to page: ${message.payload && message.payload.pageName ? message.payload.pageName : "Unknown page"}\nWaiting for selection data...`
           );
           return;
         }
