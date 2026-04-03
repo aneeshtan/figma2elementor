@@ -45,45 +45,51 @@
             </header>
 
             <main class="mx-auto max-w-7xl px-6 pb-20 pt-6">
-                <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/20 backdrop-blur">
-                    <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-                        <div class="max-w-4xl">
-                            <p class="text-sm font-semibold uppercase tracking-[0.24em] text-orange-400">Documentation</p>
-                            <h1 class="mt-5 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                                Everything you need to install, connect, export, import, and troubleshoot Figma2Element.
-                            </h1>
-                            <p class="mt-6 max-w-3xl text-lg leading-8 text-slate-300">
-                                This guide covers the full Figma2Element workflow: platform account setup, API keys, Figma exports,
-                                WordPress imports, usage limits, best practices, and recovery paths when something breaks.
-                            </p>
-                        </div>
-                        <div class="min-w-[260px] rounded-[1.5rem] border border-white/10 bg-black/20 p-5">
-                            <div class="text-xs font-semibold uppercase tracking-[0.22em] text-orange-300">Version</div>
-                            <div class="mt-2 text-lg font-semibold text-white">v0.4.0</div>
-                            <div class="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-orange-300">Last Updated</div>
-                            <div class="mt-2 text-sm text-slate-300">April 3, 2026</div>
-                            <div class="mt-5 flex flex-wrap gap-3">
-                                <a href="https://github.com/aneeshtan/figma2elementor/issues" class="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-white/30 hover:bg-white/10">Report issue</a>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="mt-8 grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)_240px]">
+                <section class="grid gap-8 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
                     <aside class="lg:sticky lg:top-6 lg:self-start">
-                        <div class="rounded-[1.75rem] border border-white/10 bg-white/5 p-5 backdrop-blur">
-                            <div class="text-sm font-semibold uppercase tracking-[0.22em] text-orange-400">Documentation</div>
-                            <nav class="mt-5 space-y-2">
-                                @foreach ($sections as $section)
-                                    <a href="#{{ $section['id'] }}" class="block rounded-2xl border border-white/5 px-4 py-3 text-sm text-slate-300 transition hover:border-white/15 hover:bg-black/20 hover:text-white">
-                                        {{ $section['label'] }}
-                                    </a>
-                                @endforeach
-                            </nav>
+                        <div class="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 backdrop-blur">
+                            <div class="border-b border-white/10 px-5 py-5">
+                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-orange-400">Documentation</p>
+                                <h1 class="mt-3 text-2xl font-semibold tracking-tight text-white">Figma2Element Docs</h1>
+                                <p class="mt-3 text-sm leading-7 text-slate-400">Install, connect, export, import, troubleshoot, and improve match quality.</p>
+                            </div>
+                            <div class="px-5 py-5">
+                                <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-300">Version</div>
+                                <div class="mt-2 text-sm font-semibold text-white">v0.4.0</div>
+                                <div class="mt-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-300">Last Updated</div>
+                                <div class="mt-2 text-sm text-slate-300">April 3, 2026</div>
+                            </div>
+                            <div class="border-t border-white/10 px-3 py-3">
+                                <nav class="space-y-1">
+                                    @foreach ($sections as $section)
+                                        <a href="#{{ $section['id'] }}" class="block rounded-2xl px-4 py-3 text-sm text-slate-300 transition hover:bg-black/30 hover:text-white">
+                                            {{ $section['label'] }}
+                                        </a>
+                                    @endforeach
+                                </nav>
+                            </div>
+                            <div class="border-t border-white/10 px-5 py-5">
+                                <a href="https://github.com/aneeshtan/figma2elementor/issues" class="inline-flex w-full items-center justify-center rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-white/30 hover:bg-white/10">Report issue</a>
+                            </div>
                         </div>
                     </aside>
 
                     <div class="space-y-6">
+                        <section class="rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl shadow-black/20 backdrop-blur">
+                            <p class="text-sm font-semibold uppercase tracking-[0.24em] text-orange-400">Public Guide</p>
+                            <h2 class="mt-5 max-w-4xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                                Everything you need to install, connect, export, import, and troubleshoot Figma2Element.
+                            </h2>
+                            <p class="mt-6 max-w-3xl text-lg leading-8 text-slate-300">
+                                This guide covers the full Figma2Element workflow: platform account setup, API keys, Figma exports,
+                                WordPress imports, usage limits, best practices, and recovery paths when something breaks.
+                            </p>
+                            <div class="mt-8 flex flex-wrap gap-3">
+                                <a href="#quick-start" class="rounded-full bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-400">Start here</a>
+                                <a href="#troubleshooting" class="rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:border-white/30 hover:bg-white/10">Troubleshooting</a>
+                            </div>
+                        </section>
+
                         <section id="overview" class="rounded-[1.75rem] border border-white/10 bg-white/5 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">Overview</h2>
                             <p class="mt-4 text-base leading-8 text-slate-300">
@@ -363,17 +369,6 @@ motion:autoplay</code></pre>
                             </div>
                         </section>
                     </div>
-
-                    <aside class="hidden xl:block xl:sticky xl:top-6 xl:self-start">
-                        <div class="rounded-[1.75rem] border border-white/10 bg-white/5 p-5 backdrop-blur">
-                            <div class="text-sm font-semibold uppercase tracking-[0.22em] text-orange-400">On This Page</div>
-                            <div class="mt-5 space-y-2">
-                                @foreach ($sections as $section)
-                                    <a href="#{{ $section['id'] }}" class="block text-sm text-slate-300 transition hover:text-white">{{ $section['label'] }}</a>
-                                @endforeach
-                            </div>
-                        </div>
-                    </aside>
                 </section>
             </main>
 
