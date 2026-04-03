@@ -1,9 +1,3 @@
-const inputEl = document.querySelector("#input-json");
-const outputEl = document.querySelector("#output-json");
-const reportEl = document.querySelector("#report");
-const loadExampleButton = document.querySelector("#load-example");
-const runConvertButton = document.querySelector("#run-convert");
-const downloadButton = document.querySelector("#download-json");
 const pricingGridEl = document.querySelector("#pricing-grid");
 const accountSummaryEl = document.querySelector("#account-summary");
 const usageSummaryEl = document.querySelector("#usage-summary");
@@ -17,31 +11,6 @@ const createKeyButton = document.querySelector("#create-key");
 const refreshJobsButton = document.querySelector("#refresh-jobs");
 const jobsBodyEl = document.querySelector("#jobs-body");
 const jobsEmptyEl = document.querySelector("#jobs-empty");
-const playgroundEndpointEl = document.querySelector("#playground-endpoint");
-const playgroundApiKeyEl = document.querySelector("#playground-api-key");
-
-let latestTemplate = null;
-let latestJobId = null;
-let bootstrapPayload = null;
-
-function slugify(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-function buildExportFilename(title, uniqueSuffix = "") {
-  const base = slugify(title) || "elementor-template";
-
-  if (uniqueSuffix) {
-    return `${base}-${uniqueSuffix}.json`;
-  }
-
-  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "z");
-  return `${base}-${stamp}.json`;
-}
 
 function escapeHtml(value) {
   return String(value)
@@ -53,22 +22,11 @@ function escapeHtml(value) {
 }
 
 function currentApiKey() {
-  return playgroundApiKeyEl.value.trim();
+  return apiKeySelectEl.value.trim();
 }
 
 function currentEndpoint() {
-  return playgroundEndpointEl.value.trim();
-}
-
-function renderReport(report) {
-  if (!report) {
-    reportEl.textContent = "";
-    return;
-  }
-
-  const warnings = report.warnings.length ? report.warnings.join(" | ") : "No mapper warnings.";
-  const jobText = latestJobId ? ` Saved as job ${latestJobId}.` : "";
-  reportEl.textContent = `Converted ${report.convertedNodes} nodes.${jobText} ${warnings}`;
+  return `${window.location.origin}/api/convert`;
 }
 
 function renderPlans(plans, activePlanId) {
@@ -124,7 +82,6 @@ function syncApiKeyInputs(apiKeys, preferredToken) {
   }
 
   const selectedToken = apiKeySelectEl.value || apiKeys[0]?.token || "";
-  playgroundApiKeyEl.value = selectedToken;
   apiKeyValueEl.textContent = selectedToken || "No API key available.";
 }
 
@@ -153,7 +110,6 @@ function renderJobs(jobs) {
 }
 
 function applyBootstrap(payload, preferredToken = null) {
-  bootstrapPayload = payload;
   renderPlans(payload.plans, payload.account.planId);
   renderAccount(payload.account);
   syncApiKeyInputs(payload.account.apiKeys, preferredToken || payload.defaultApiKey?.token);
@@ -164,19 +120,7 @@ function applyBootstrap(payload, preferredToken = null) {
 async function bootstrapPlatform(preferredToken = null) {
   const response = await fetch("/api/platform/bootstrap");
   const payload = await response.json();
-  playgroundEndpointEl.value = `${window.location.origin}/api/convert`;
   applyBootstrap(payload, preferredToken);
-}
-
-async function loadExample() {
-  const response = await fetch("/api/example");
-  const payload = await response.json();
-
-  inputEl.value = JSON.stringify(payload.source, null, 2);
-  outputEl.value = JSON.stringify(payload.template, null, 2);
-  latestTemplate = payload.template;
-  renderReport(payload.report);
-  downloadButton.disabled = false;
 }
 
 async function refreshJobs() {
@@ -192,62 +136,6 @@ async function refreshJobs() {
   }
 
   renderJobs(payload.jobs);
-}
-
-async function convertPayload() {
-  try {
-    const payload = JSON.parse(inputEl.value);
-    const response = await fetch(currentEndpoint(), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": currentApiKey(),
-        "x-client-name": "web-playground",
-        "x-origin-app": "web"
-      },
-      body: JSON.stringify({
-        source: payload
-      })
-    });
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.error || "Conversion failed.");
-    }
-
-    outputEl.value = JSON.stringify(result.template, null, 2);
-    latestTemplate = result.template;
-    latestJobId = result.job?.id || null;
-    renderReport(result.report);
-    downloadButton.disabled = false;
-    if (result.account) {
-      renderAccount(result.account);
-    }
-    await refreshJobs();
-  } catch (error) {
-    latestJobId = null;
-    renderReport({
-      convertedNodes: 0,
-      warnings: [error instanceof Error ? error.message : "Could not convert payload."]
-    });
-  }
-}
-
-function downloadOutput() {
-  if (!latestTemplate) {
-    return;
-  }
-
-  const blob = new Blob([JSON.stringify(latestTemplate, null, 2)], {
-    type: "application/json"
-  });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-
-  anchor.href = url;
-  anchor.download = buildExportFilename(latestTemplate.title, latestJobId ? latestJobId.replace(/^job_/, "") : "");
-  anchor.click();
-  URL.revokeObjectURL(url);
 }
 
 async function createKey() {
@@ -269,34 +157,27 @@ async function createKey() {
   await bootstrapPlatform(payload.apiKey.token);
 }
 
-loadExampleButton.addEventListener("click", loadExample);
-runConvertButton.addEventListener("click", convertPayload);
-downloadButton.addEventListener("click", downloadOutput);
 createKeyButton.addEventListener("click", async () => {
   try {
     await createKey();
   } catch (error) {
-    reportEl.textContent = error instanceof Error ? error.message : "Could not create key.";
+    apiKeyValueEl.textContent = error instanceof Error ? error.message : "Could not create key.";
   }
 });
+
 refreshJobsButton.addEventListener("click", async () => {
   try {
     await refreshJobs();
   } catch (error) {
-    reportEl.textContent = error instanceof Error ? error.message : "Could not refresh jobs.";
+    jobsEmptyEl.style.display = "block";
+    jobsEmptyEl.textContent = error instanceof Error ? error.message : "Could not refresh jobs.";
   }
 });
+
 apiKeySelectEl.addEventListener("change", () => {
-  playgroundApiKeyEl.value = apiKeySelectEl.value;
   apiKeyValueEl.textContent = apiKeySelectEl.value;
   renderPluginConfig();
   refreshJobs().catch(() => {});
 });
-playgroundApiKeyEl.addEventListener("input", () => {
-  apiKeyValueEl.textContent = playgroundApiKeyEl.value.trim();
-  renderPluginConfig();
-});
-playgroundEndpointEl.addEventListener("input", renderPluginConfig);
 
 await bootstrapPlatform();
-await loadExample();
