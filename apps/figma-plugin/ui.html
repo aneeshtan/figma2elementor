@@ -319,11 +319,17 @@
         if (message.type === "selection-data") {
           selectionEl.value = JSON.stringify(message.payload, null, 2);
           const selectedCount = Array.isArray(message.payload.children) ? message.payload.children.length : 0;
+          const forcedIds =
+            message.payload &&
+            message.payload.conversionHints &&
+            Array.isArray(message.payload.conversionHints.forceNativeImageCarouselIds)
+              ? message.payload.conversionHints.forceNativeImageCarouselIds.length
+              : 0;
           setStatus(
             selectedCount ? "success" : "",
             selectedCount ? "Selection ready." : "Nothing is selected.",
             selectedCount
-              ? `Selected root: ${message.payload.name || "Untitled selection"}\nSelected nodes: ${selectedCount}`
+              ? `Selected root: ${message.payload.name || "Untitled selection"}\nSelected nodes: ${selectedCount}\nForced native carousels: ${forcedIds}`
               : "Select a frame or layer in Figma, then click Convert."
           );
           return;

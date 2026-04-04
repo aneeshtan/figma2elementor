@@ -476,6 +476,18 @@ function normalizeRoot(source) {
   };
 }
 
+function getRootConversionHints(helpers) {
+  return helpers && helpers.root && helpers.root.conversionHints && typeof helpers.root.conversionHints === "object"
+    ? helpers.root.conversionHints
+    : null;
+}
+
+function shouldForceNativeImageCarousel(node, helpers) {
+  const hints = getRootConversionHints(helpers);
+  const ids = hints && Array.isArray(hints.forceNativeImageCarouselIds) ? hints.forceNativeImageCarouselIds : [];
+  return !!node && typeof node.id === "string" && ids.includes(node.id);
+}
+
 function mapAlignment(value, direction) {
   if (direction === "column") {
     if (value === "CENTER") return "center";
@@ -2440,7 +2452,7 @@ function mapSliderSection(node, helpers, depth, sliderPattern) {
   const rawLogoSlides = sliderPattern.cards.map((card) => extractRawLogoSlideFromCard(card)).filter(Boolean);
   const useNativeImageCarousel =
     rawLogoSlides.length === sliderPattern.cards.length &&
-    (isLogoOnlyTrack || isExplicitLogoCarousel(node, sliderPattern));
+    (isLogoOnlyTrack || isExplicitLogoCarousel(node, sliderPattern) || shouldForceNativeImageCarousel(node, helpers));
 
   if (slideData.length < 2) {
     return null;
@@ -3325,7 +3337,8 @@ export function convertFigmaSelectionToElementor(source) {
   };
   const helpers = {
     nextId,
-    report
+    report,
+    root: normalized
   };
 
   const content = (normalized.children || []).map((node) => mapNode(node, helpers, 0)).filter(Boolean);

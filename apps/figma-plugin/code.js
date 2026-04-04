@@ -874,6 +874,51 @@ async function serializeNode(node, parentSemantics = null) {
   return payload;
 }
 
+function collectSerializedNodes(node, includeSelf = false) {
+  if (!node) {
+    return [];
+  }
+
+  const items = includeSelf ? [node] : [];
+
+  for (let index = 0; index < (node.children || []).length; index += 1) {
+    const child = node.children[index];
+    items.push(child);
+    items.push.apply(items, collectSerializedNodes(child));
+  }
+
+  return items;
+}
+
+function buildConversionHints(selectionPayload) {
+  const selectedRoots = Array.isArray(selectionPayload.children) ? selectionPayload.children : [];
+  const hints = {
+    forceNativeImageCarouselIds: [],
+    debug: {
+      selectedRootTypes: selectedRoots.map((node) => node.type),
+      selectedRootNames: selectedRoots.map((node) => node.name)
+    }
+  };
+
+  for (let index = 0; index < selectedRoots.length; index += 1) {
+    const root = selectedRoots[index];
+    const rootName = String(root && root.name ? root.name : "").toLowerCase();
+    const descendants = collectSerializedNodes(root, true);
+    const trackNode = descendants.find((child) => child && child.semantics && child.semantics.role === "track") || null;
+    const trackName = String(trackNode && trackNode.name ? trackNode.name : "").toLowerCase();
+    const looksLikeBrandSlider =
+      (root && root.semantics && root.semantics.role === "slider") &&
+      (rootName.includes("brand") || rootName.includes("brands") || rootName.includes("logo") || rootName.includes("logos") ||
+        trackName.includes("brand") || trackName.includes("brands") || trackName.includes("logo") || trackName.includes("logos"));
+
+    if (looksLikeBrandSlider && root.id) {
+      hints.forceNativeImageCarouselIds.push(root.id);
+    }
+  }
+
+  return hints.forceNativeImageCarouselIds.length ? hints : null;
+}
+
 async function getSelectionPayload() {
   const selection = figma.currentPage.selection;
 
@@ -885,11 +930,18 @@ async function getSelectionPayload() {
     };
   }
 
-  return {
+  const payload = {
     name: selection.length === 1 ? selection[0].name : "Figma selection",
     type: "SELECTION",
     children: await Promise.all(selection.map((node) => serializeNode(node)))
   };
+
+  const conversionHints = buildConversionHints(payload);
+  if (conversionHints) {
+    payload.conversionHints = conversionHints;
+  }
+
+  return payload;
 }
 
 async function sendSelection() {
