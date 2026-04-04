@@ -1188,6 +1188,19 @@ function extractRawLogoSlideFromCard(node) {
   };
 }
 
+function isExplicitLogoCarousel(node, sliderPattern) {
+  const names = [node?.name || "", sliderPattern?.trackNode?.name || ""]
+    .join(" ")
+    .toLowerCase();
+
+  return (
+    names.includes("logo") ||
+    names.includes("logos") ||
+    names.includes("brand") ||
+    names.includes("brands")
+  );
+}
+
 function createHtmlWidgetNode(name, html, helpers) {
   return {
     id: helpers.nextId(`${name}-html`),
@@ -2425,7 +2438,9 @@ function mapSliderSection(node, helpers, depth, sliderPattern) {
   const interactionTiming = getInteractionTiming(node);
   const isLogoOnlyTrack = sliderPattern.cards.every((card) => isLogoLikeTrackCard(card));
   const rawLogoSlides = sliderPattern.cards.map((card) => extractRawLogoSlideFromCard(card)).filter(Boolean);
-  const useNativeImageCarousel = isLogoOnlyTrack && rawLogoSlides.length === sliderPattern.cards.length;
+  const useNativeImageCarousel =
+    rawLogoSlides.length === sliderPattern.cards.length &&
+    (isLogoOnlyTrack || isExplicitLogoCarousel(node, sliderPattern));
 
   if (slideData.length < 2) {
     return null;
