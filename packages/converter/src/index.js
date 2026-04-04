@@ -2444,8 +2444,6 @@ function buildNativeImageCarouselNode(node, slides, options, helpers) {
 }
 
 function buildNativeSlidesNode(node, slides, options, helpers) {
-  const maxHeight = slides.reduce((accumulator, slide) => Math.max(accumulator, Number(slide.minHeight) || 0), 0);
-
   return {
     id: helpers.nextId(`${node.name || "slider"}-slides`),
     elType: "widget",
@@ -2459,9 +2457,12 @@ function buildNativeSlidesNode(node, slides, options, helpers) {
         heading: slide.title || `Slide ${index + 1}`,
         description: slide.body || "",
         button_text: slide.button?.text || "",
-        button_link: slide.button ? { url: extractLinkTarget(node, slide.button.text || slide.title || `slide-${index + 1}`) } : { url: "" },
         background_image: {
-          url: slide.imageUrl || ""
+          url: slide.imageUrl || "",
+          id: "",
+          size: "",
+          alt: slide.title || "",
+          source: "external"
         },
         background_color: slide.panelColor || "#c2e3ed"
       })),
@@ -2469,15 +2470,7 @@ function buildNativeSlidesNode(node, slides, options, helpers) {
       autoplay: options.autoplay ? "yes" : "",
       autoplay_speed:
         typeof options.autoplayDelay === "number" && options.autoplayDelay > 0 ? Math.round(options.autoplayDelay) : 4200,
-      infinite: "yes",
-      transition: "slide",
-      transition_speed:
-        typeof options.transitionDuration === "number" && options.transitionDuration > 0
-          ? Math.round(options.transitionDuration)
-          : 500,
-      content_animation: "fadeInRight",
-      height: "custom",
-      slides_height: px(Math.max(maxHeight, 320))
+      content_animation: "fadeInRight"
     },
     elements: []
   };
