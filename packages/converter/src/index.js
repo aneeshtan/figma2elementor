@@ -1156,6 +1156,38 @@ function isLogoLikeTrackCard(node) {
   return textValues.every((value) => /^\d+$/.test(value) || /^logo$/i.test(value));
 }
 
+function extractRawLogoSlideFromCard(node) {
+  if (!node) {
+    return null;
+  }
+
+  const descendants = collectDescendants(node, true);
+  const imageNode = descendants
+    .filter((child) => isImageLikeNode(child))
+    .sort((left, right) => getArea(right) - getArea(left))[0];
+
+  if (!imageNode || !imageNode.imageUrl) {
+    return null;
+  }
+
+  const cardBounds = getNodeBounds(node);
+  const imageBounds = getNodeBounds(imageNode);
+  const slideStroke = firstStroke(node);
+  const slideFill = firstSolidFill(node);
+
+  return {
+    type: "logo",
+    title: "Logo",
+    imageUrl: imageNode.imageUrl,
+    cardColor: normalizeColor(slideFill?.color) || "#ffffff",
+    borderColor: normalizeColor(slideStroke?.color) || "rgba(148,163,184,.24)",
+    cardRadius: node.cornerRadius || 12,
+    imageRadius: imageNode.cornerRadius || node.cornerRadius || 12,
+    minHeight: Math.max(cardBounds.height || imageBounds.height || 0, 92),
+    width: Math.max(cardBounds.width || imageBounds.width || 0, 120)
+  };
+}
+
 function createHtmlWidgetNode(name, html, helpers) {
   return {
     id: helpers.nextId(`${name}-html`),
@@ -2392,6 +2424,8 @@ function mapSliderSection(node, helpers, depth, sliderPattern) {
   );
   const interactionTiming = getInteractionTiming(node);
   const isLogoOnlyTrack = sliderPattern.cards.every((card) => isLogoLikeTrackCard(card));
+  const rawLogoSlides = sliderPattern.cards.map((card) => extractRawLogoSlideFromCard(card)).filter(Boolean);
+  const useNativeImageCarousel = isLogoOnlyTrack && rawLogoSlides.length === sliderPattern.cards.length;
 
   if (slideData.length < 2) {
     return null;
@@ -2418,10 +2452,10 @@ function mapSliderSection(node, helpers, depth, sliderPattern) {
   };
 
   elements.push(
-    isLogoOnlyTrack || slideData.every((slide) => slide.type === "logo")
+    useNativeImageCarousel || slideData.every((slide) => slide.type === "logo")
       ? buildNativeImageCarouselNode(
           node,
-          slideData,
+          useNativeImageCarousel ? rawLogoSlides : slideData,
           {
             ...sliderOptions,
             visibleSlides: nativeVisibleSlides
