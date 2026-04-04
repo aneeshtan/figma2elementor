@@ -1046,7 +1046,7 @@ function extractSlideCardData(node) {
   const contentRoot = descendants.find((child) => hasRole(child, "content")) || node;
   const contentDescendants = collectDescendants(contentRoot, contentRoot === node);
   const textNodes = contentDescendants
-    .filter((child) => isTextNode(child))
+    .filter((child) => isTextNode(child) && child.characters && child.characters.trim())
     .sort((left, right) => {
       const sizeDelta = (right.style?.fontSize || 0) - (left.style?.fontSize || 0);
       if (Math.abs(sizeDelta) > 0.5) {
@@ -1066,12 +1066,14 @@ function extractSlideCardData(node) {
   const imageBounds = getNodeBounds(imageNode);
   const panelBounds = panelNode ? getNodeBounds(panelNode) : null;
   const fallbackTitle = stripHtmlPrefix((node.name || "").trim());
-  const resolvedTitle = titleNode?.characters?.trim() || fallbackTitle || "Slide";
+  const titleText = titleNode?.characters?.trim() || "";
+  const bodyText = bodyNode?.characters?.trim() || "";
+  const resolvedTitle = titleText || fallbackTitle || "Slide";
   const isNumericFallbackTitle = /^\d+$/.test(resolvedTitle);
   const slideStroke = firstStroke(node) || firstStroke(panelNode);
   const slideFill = firstSolidFill(node) || panelFill;
 
-  if (!bodyNode && !button && (!titleNode || isNumericFallbackTitle)) {
+  if (!bodyText && !button && (!titleText || isNumericFallbackTitle)) {
     return {
       type: "logo",
       title: !isNumericFallbackTitle ? resolvedTitle : "Logo",
@@ -1088,7 +1090,7 @@ function extractSlideCardData(node) {
   return {
     type: "content",
     title: resolvedTitle,
-    body: bodyNode?.characters?.trim() || "",
+    body: bodyText,
     imageUrl: imageNode.imageUrl,
     panelColor: normalizeColor(panelFill?.color) || "#c2e3ed",
     titleColor: normalizeColor(titleFill?.color) || "#303351",
@@ -1098,6 +1100,60 @@ function extractSlideCardData(node) {
     button,
     minHeight: Math.max(imageBounds.height || 0, panelBounds?.height || 0, 240)
   };
+}
+
+function isLogoLikeSlide(slide) {
+  if (!slide || !slide.imageUrl) {
+    return false;
+  }
+
+  const title = String(slide.title || "").trim();
+  const body = String(slide.body || "").trim();
+
+  return !slide.button && !body && (!title || /^logo$/i.test(title) || /^\d+$/.test(title));
+}
+
+function normalizeSlideDataForCarousel(slides) {
+  return slides.map((slide) => {
+    if (!slide || slide.type === "logo" || !isLogoLikeSlide(slide)) {
+      return slide;
+    }
+
+    return {
+      type: "logo",
+      title: "Logo",
+      imageUrl: slide.imageUrl,
+      cardColor: normalizeColor(slide.panelColor) || "#ffffff",
+      borderColor: "rgba(148,163,184,.24)",
+      cardRadius: slide.panelRadius || 12,
+      imageRadius: slide.imageRadius || slide.panelRadius || 12,
+      minHeight: Math.max(Number(slide.minHeight) || 0, 92),
+      width: 160
+    };
+  });
+}
+
+function isLogoLikeTrackCard(node) {
+  if (!node) {
+    return false;
+  }
+
+  const descendants = collectDescendants(node);
+  const imageNodes = descendants.filter((child) => isImageLikeNode(child));
+
+  if (!imageNodes.length) {
+    return false;
+  }
+
+  const textValues = descendants
+    .filter((child) => isTextNode(child) && child.characters && child.characters.trim())
+    .map((child) => child.characters.trim());
+
+  if (!textValues.length) {
+    return true;
+  }
+
+  return textValues.every((value) => /^\d+$/.test(value) || /^logo$/i.test(value));
 }
 
 function createHtmlWidgetNode(name, html, helpers) {
@@ -2331,8 +2387,11 @@ function buildNativeImageCarouselNode(node, slides, options, helpers) {
 }
 
 function mapSliderSection(node, helpers, depth, sliderPattern) {
-  const slideData = sliderPattern.cards.map((card) => extractSlideCardData(card)).filter(Boolean);
+  const slideData = normalizeSlideDataForCarousel(
+    sliderPattern.cards.map((card) => extractSlideCardData(card)).filter(Boolean)
+  );
   const interactionTiming = getInteractionTiming(node);
+  const isLogoOnlyTrack = sliderPattern.cards.every((card) => isLogoLikeTrackCard(card));
 
   if (slideData.length < 2) {
     return null;
@@ -2359,7 +2418,7 @@ function mapSliderSection(node, helpers, depth, sliderPattern) {
   };
 
   elements.push(
-    slideData.every((slide) => slide.type === "logo")
+    isLogoOnlyTrack || slideData.every((slide) => slide.type === "logo")
       ? buildNativeImageCarouselNode(
           node,
           slideData,
