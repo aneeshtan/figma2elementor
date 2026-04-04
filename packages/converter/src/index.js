@@ -2443,6 +2443,46 @@ function buildNativeImageCarouselNode(node, slides, options, helpers) {
   };
 }
 
+function buildNativeSlidesNode(node, slides, options, helpers) {
+  const maxHeight = slides.reduce((accumulator, slide) => Math.max(accumulator, Number(slide.minHeight) || 0), 0);
+
+  return {
+    id: helpers.nextId(`${node.name || "slider"}-slides`),
+    elType: "widget",
+    widgetType: "slides",
+    isInner: false,
+    settings: {
+      _title: `${node.name || "Slider"} Slides`,
+      slides_name: "Slides",
+      slides: slides.map((slide, index) => ({
+        _id: helpers.nextId(`${node.name || "slide"}-${index}`),
+        heading: slide.title || `Slide ${index + 1}`,
+        description: slide.body || "",
+        button_text: slide.button?.text || "",
+        button_link: slide.button ? { url: extractLinkTarget(node, slide.button.text || slide.title || `slide-${index + 1}`) } : { url: "" },
+        background_image: {
+          url: slide.imageUrl || ""
+        },
+        background_color: slide.panelColor || "#c2e3ed"
+      })),
+      navigation: slides.length > 1 ? "dots" : "none",
+      autoplay: options.autoplay ? "yes" : "",
+      autoplay_speed:
+        typeof options.autoplayDelay === "number" && options.autoplayDelay > 0 ? Math.round(options.autoplayDelay) : 4200,
+      infinite: "yes",
+      transition: "slide",
+      transition_speed:
+        typeof options.transitionDuration === "number" && options.transitionDuration > 0
+          ? Math.round(options.transitionDuration)
+          : 500,
+      content_animation: "fadeInRight",
+      height: "custom",
+      slides_height: px(Math.max(maxHeight, 320))
+    },
+    elements: []
+  };
+}
+
 function mapSliderSection(node, helpers, depth, sliderPattern) {
   const slideData = normalizeSlideDataForCarousel(
     sliderPattern.cards.map((card) => extractSlideCardData(card)).filter(Boolean)
@@ -2453,6 +2493,11 @@ function mapSliderSection(node, helpers, depth, sliderPattern) {
   const useNativeImageCarousel =
     rawLogoSlides.length === sliderPattern.cards.length &&
     (isLogoOnlyTrack || isExplicitLogoCarousel(node, sliderPattern) || shouldForceNativeImageCarousel(node, helpers));
+  const useNativeSlidesWidget =
+    !useNativeImageCarousel &&
+    slideData.length === sliderPattern.cards.length &&
+    slideData.every((slide) => slide.type === "content") &&
+    sliderPattern.cards.every((card) => hasRole(card, "slide"));
 
   if (slideData.length < 2) {
     return null;
@@ -2489,6 +2534,13 @@ function mapSliderSection(node, helpers, depth, sliderPattern) {
           },
           helpers
         )
+      : useNativeSlidesWidget
+        ? buildNativeSlidesNode(
+            node,
+            slideData,
+            sliderOptions,
+            helpers
+          )
       : createHtmlWidgetNode(
           `${node.name || "Slider"} Carousel`,
           buildSliderHtml(
