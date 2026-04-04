@@ -1032,7 +1032,7 @@ function extractButtonData(node) {
 }
 
 function extractSlideCardData(node) {
-  const descendants = collectDescendants(node);
+  const descendants = collectDescendants(node, true);
   const explicitMediaNode = descendants.find((child) => hasRole(child, "media") && child.imageUrl) || null;
   const imageNode = (explicitMediaNode ? [explicitMediaNode] : descendants)
     .filter((child) => isImageLikeNode(child))
@@ -1043,7 +1043,7 @@ function extractSlideCardData(node) {
   }
 
   const panelNode = pickPanelBackgroundNode(node, imageNode);
-  const contentRoot = descendants.find((child) => hasRole(child, "content")) || node;
+  const contentRoot = descendants.find((child) => child !== node && hasRole(child, "content")) || node;
   const contentDescendants = collectDescendants(contentRoot, contentRoot === node);
   const textNodes = contentDescendants
     .filter((child) => isTextNode(child) && child.characters && child.characters.trim())
@@ -1138,7 +1138,7 @@ function isLogoLikeTrackCard(node) {
     return false;
   }
 
-  const descendants = collectDescendants(node);
+  const descendants = collectDescendants(node, true);
   const imageNodes = descendants.filter((child) => isImageLikeNode(child));
 
   if (!imageNodes.length) {
