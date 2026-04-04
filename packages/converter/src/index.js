@@ -2295,6 +2295,41 @@ function buildLogoCarouselHtml(node, slides, options, helpers) {
 </style>`;
 }
 
+function buildNativeImageCarouselNode(node, slides, options, helpers) {
+  return {
+    id: helpers.nextId(`${node.name || "slider"}-image-carousel`),
+    elType: "widget",
+    widgetType: "image-carousel",
+    isInner: false,
+    settings: {
+      _title: `${node.name || "Slider"} Carousel`,
+      carousel_name: stripHtmlPrefix(node.name || "Image Carousel"),
+      carousel: slides.map((slide) => ({
+        id: "",
+        url: slide.imageUrl
+      })),
+      thumbnail_size: "full",
+      slides_to_show: String(Math.max(1, Math.min(10, slides.length, Math.round(options.visibleSlides || 1)))),
+      slides_to_scroll: "1",
+      image_stretch: "no",
+      navigation: "none",
+      link_to: "none",
+      caption_type: "",
+      lazyload: "yes",
+      autoplay: options.autoplay ? "yes" : "",
+      pause_on_hover: options.autoplay ? "yes" : "",
+      pause_on_interaction: options.autoplay ? "yes" : "",
+      autoplay_speed:
+        typeof options.autoplayDelay === "number" && options.autoplayDelay > 0 ? Math.round(options.autoplayDelay) : 4200,
+      infinite: "yes",
+      effect: "slide",
+      speed: typeof options.transitionDuration === "number" && options.transitionDuration > 0 ? Math.round(options.transitionDuration) : 450,
+      direction: "ltr"
+    },
+    elements: []
+  };
+}
+
 function mapSliderSection(node, helpers, depth, sliderPattern) {
   const slideData = sliderPattern.cards.map((card) => extractSlideCardData(card)).filter(Boolean);
   const interactionTiming = getInteractionTiming(node);
@@ -2304,27 +2339,46 @@ function mapSliderSection(node, helpers, depth, sliderPattern) {
   }
 
   const elements = [];
-  if (sliderPattern.headingNode) {
-    elements.push(mapTextNode(sliderPattern.headingNode, helpers));
+  const supportingChildren = getVisibleSceneChildren(node).filter((child) => child !== sliderPattern.trackNode && child !== sliderPattern.dotsNode);
+  for (const child of supportingChildren) {
+    const mapped = mapNode(child, helpers, depth + 1);
+    if (mapped) {
+      elements.push(mapped);
+    }
   }
 
+  const averageSlideWidth =
+    sliderPattern.cards.reduce((sum, card) => sum + Math.max(getNodeBounds(card).width, 1), 0) / Math.max(sliderPattern.cards.length, 1);
+  const nativeVisibleSlides = Math.max(1, Math.min(10, Math.round(getNodeBounds(node).width / Math.max(averageSlideWidth, 1))));
+  const sliderOptions = {
+    visibleSlides: sliderPattern.visibleSlides,
+    gap: sliderPattern.gap,
+    autoplay: hasAutoPlayMotion(node),
+    autoplayDelay: interactionTiming.autoplayDelay,
+    transitionDuration: interactionTiming.transitionDuration
+  };
+
   elements.push(
-    createHtmlWidgetNode(
-      `${node.name || "Slider"} Carousel`,
-      buildSliderHtml(
-        node,
-        slideData,
-        {
-          visibleSlides: sliderPattern.visibleSlides,
-          gap: sliderPattern.gap,
-          autoplay: hasAutoPlayMotion(node),
-          autoplayDelay: interactionTiming.autoplayDelay,
-          transitionDuration: interactionTiming.transitionDuration
-        },
-        helpers
-      ),
-      helpers
-    )
+    slideData.every((slide) => slide.type === "logo")
+      ? buildNativeImageCarouselNode(
+          node,
+          slideData,
+          {
+            ...sliderOptions,
+            visibleSlides: nativeVisibleSlides
+          },
+          helpers
+        )
+      : createHtmlWidgetNode(
+          `${node.name || "Slider"} Carousel`,
+          buildSliderHtml(
+            node,
+            slideData,
+            sliderOptions,
+            helpers
+          ),
+          helpers
+        )
   );
 
   return {
