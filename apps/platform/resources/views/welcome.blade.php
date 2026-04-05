@@ -5,41 +5,494 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{{ config('app.name') === 'Laravel' ? 'Figma2Element' : config('app.name', 'Figma2Element') }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <style>
+            .pricing-showcase {
+                --ps-line: rgba(255, 255, 255, 0.08);
+                --ps-text: #f5f7fb;
+                --ps-muted: #97a3bf;
+                --ps-accent: #7c5cff;
+                --ps-accent-2: #34d399;
+                --ps-glow: rgba(124, 92, 255, 0.35);
+                --ps-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+                --ps-radius: 28px;
+                position: relative;
+                overflow: hidden;
+                border: 1px solid var(--ps-line);
+                border-radius: 36px;
+                padding: 44px;
+                background: linear-gradient(180deg, rgba(8, 18, 44, 0.92), rgba(5, 12, 31, 0.96));
+                box-shadow: var(--ps-shadow);
+            }
+
+            .pricing-showcase::before {
+                content: "";
+                position: absolute;
+                inset: -20% auto auto -10%;
+                width: 360px;
+                height: 360px;
+                border-radius: 999px;
+                background: radial-gradient(circle, rgba(124, 92, 255, 0.22), transparent 68%);
+                pointer-events: none;
+            }
+
+            .pricing-showcase::after {
+                content: "";
+                position: absolute;
+                right: -120px;
+                bottom: -120px;
+                width: 340px;
+                height: 340px;
+                border-radius: 999px;
+                background: radial-gradient(circle, rgba(52, 211, 153, 0.14), transparent 65%);
+                pointer-events: none;
+            }
+
+            .pricing-showcase__topbar,
+            .pricing-showcase__grid {
+                position: relative;
+                z-index: 1;
+            }
+
+            .pricing-showcase__topbar {
+                display: flex;
+                gap: 24px;
+                justify-content: space-between;
+                align-items: start;
+                margin-bottom: 30px;
+            }
+
+            .pricing-showcase__eyebrow {
+                font-size: 0.82rem;
+                letter-spacing: 0.24em;
+                text-transform: uppercase;
+                font-weight: 700;
+                color: #ffb86b;
+                margin-bottom: 16px;
+            }
+
+            .pricing-showcase__title {
+                margin: 0;
+                font-size: clamp(2rem, 4vw, 3.5rem);
+                line-height: 1.05;
+                letter-spacing: -0.04em;
+                max-width: 760px;
+            }
+
+            .pricing-showcase__subtext {
+                margin-top: 16px;
+                font-size: 1.08rem;
+                line-height: 1.7;
+                color: var(--ps-muted);
+                max-width: 860px;
+            }
+
+            .pricing-showcase__cta {
+                flex-shrink: 0;
+                align-self: center;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 220px;
+                min-height: 94px;
+                padding: 20px 28px;
+                border-radius: 999px;
+                border: 1px solid rgba(255, 255, 255, 0.12);
+                background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+                color: var(--ps-text);
+                text-decoration: none;
+                font-weight: 700;
+                font-size: 1.05rem;
+                transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+            }
+
+            .pricing-showcase__cta:hover {
+                transform: translateY(-2px);
+                border-color: rgba(124, 92, 255, 0.45);
+                box-shadow: 0 0 0 8px rgba(124, 92, 255, 0.08);
+            }
+
+            .pricing-showcase__grid {
+                display: grid;
+                grid-template-columns: 1.7fr 1fr;
+                border: 1px solid var(--ps-line);
+                border-radius: var(--ps-radius);
+                overflow: hidden;
+                background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.025));
+            }
+
+            .pricing-showcase__milestones,
+            .pricing-showcase__summary {
+                padding: 34px;
+            }
+
+            .pricing-showcase__summary {
+                background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.03));
+                border-left: 1px solid var(--ps-line);
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+            }
+
+            .pricing-showcase__section-label {
+                color: #7f8db0;
+                text-transform: uppercase;
+                letter-spacing: 0.28em;
+                font-weight: 700;
+                font-size: 0.82rem;
+                margin-bottom: 22px;
+            }
+
+            .pricing-showcase__stats-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                margin-bottom: 26px;
+            }
+
+            .pricing-showcase__big-number {
+                font-size: clamp(2rem, 4vw, 3.8rem);
+                font-weight: 800;
+                line-height: 1;
+                letter-spacing: -0.05em;
+            }
+
+            .pricing-showcase__mini-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 14px;
+                border-radius: 999px;
+                border: 1px solid rgba(255,255,255,0.1);
+                background: rgba(255,255,255,0.03);
+                color: #d4dcf0;
+                font-weight: 600;
+                font-size: 0.92rem;
+            }
+
+            .pricing-showcase__track-wrap {
+                position: relative;
+                padding: 32px 6px 14px;
+            }
+
+            .pricing-showcase__track {
+                position: relative;
+                height: 10px;
+                border-radius: 999px;
+                background: linear-gradient(90deg, rgba(255,255,255,0.11), rgba(255,255,255,0.04));
+                overflow: visible;
+            }
+
+            .pricing-showcase__progress {
+                position: absolute;
+                inset: 0 auto 0 0;
+                width: 0;
+                border-radius: inherit;
+                background: linear-gradient(90deg, var(--ps-accent), var(--ps-accent-2));
+                box-shadow: 0 0 22px var(--ps-glow);
+                transition: width 1.4s ease;
+            }
+
+            .pricing-showcase__point {
+                position: absolute;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                border: 3px solid rgba(255,255,255,0.22);
+                background: #0a1735;
+                box-shadow: 0 0 0 7px rgba(255,255,255,0.02);
+            }
+
+            .pricing-showcase__point.is-active {
+                width: 24px;
+                height: 24px;
+                border-color: rgba(255,255,255,0.42);
+                background: radial-gradient(circle at 35% 35%, #ffffff, #c6b8ff 35%, var(--ps-accent) 66%, #5638d7 100%);
+                box-shadow: 0 0 0 8px rgba(124, 92, 255, 0.18), 0 0 26px rgba(124, 92, 255, 0.42);
+            }
+
+            .pricing-showcase__labels {
+                display: grid;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 14px;
+                margin-top: 18px;
+            }
+
+            .pricing-showcase__pill {
+                justify-self: center;
+                min-width: 88px;
+                text-align: center;
+                padding: 10px 12px;
+                border-radius: 999px;
+                border: 1px solid rgba(255,255,255,0.08);
+                color: #cbd5e8;
+                background: rgba(255,255,255,0.025);
+                font-weight: 700;
+                font-size: 0.96rem;
+                letter-spacing: -0.01em;
+                backdrop-filter: blur(10px);
+                transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+            }
+
+            .pricing-showcase__pill:hover,
+            .pricing-showcase__pill.is-active {
+                color: #fff;
+                border-color: rgba(255,255,255,0.22);
+                background: linear-gradient(180deg, rgba(124, 92, 255, 0.22), rgba(124, 92, 255, 0.12));
+                box-shadow: 0 8px 24px rgba(124, 92, 255, 0.18);
+            }
+
+            .pricing-showcase__price {
+                font-size: clamp(3.2rem, 5vw, 5rem);
+                font-weight: 800;
+                letter-spacing: -0.06em;
+                line-height: 1;
+                margin: 8px 0 18px;
+            }
+
+            .pricing-showcase__description {
+                color: var(--ps-muted);
+                line-height: 1.8;
+                font-size: 1.03rem;
+                max-width: 430px;
+            }
+
+            .pricing-showcase__summary-footer {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                margin-top: 28px;
+            }
+
+            .pricing-showcase__summary-footer .pricing-showcase__mini-chip strong {
+                color: #fff;
+            }
+
+            .pricing-showcase__insights {
+                margin-top: 34px;
+                padding: 24px;
+                border-radius: 24px;
+                border: 1px solid rgba(255,255,255,0.08);
+                background:
+                    radial-gradient(circle at left top, rgba(124, 92, 255, 0.14), transparent 38%),
+                    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+            }
+
+            .pricing-showcase__insight-top {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                margin-bottom: 18px;
+                flex-wrap: wrap;
+            }
+
+            .pricing-showcase__insight-title {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-weight: 800;
+                font-size: 1.04rem;
+                color: #ffffff;
+            }
+
+            .pricing-showcase__icon {
+                width: 34px;
+                height: 34px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 999px;
+                background: rgba(124, 92, 255, 0.18);
+                box-shadow: 0 0 0 6px rgba(124, 92, 255, 0.08);
+                font-size: 1rem;
+            }
+
+            .pricing-showcase__insight-badge {
+                padding: 10px 14px;
+                border-radius: 999px;
+                border: 1px solid rgba(255,255,255,0.09);
+                background: rgba(255,255,255,0.03);
+                color: #d9e1f3;
+                font-weight: 700;
+                font-size: 0.92rem;
+            }
+
+            .pricing-showcase__next-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 14px;
+                margin-bottom: 20px;
+            }
+
+            .pricing-showcase__next-card {
+                padding: 16px;
+                border-radius: 20px;
+                border: 1px solid rgba(255,255,255,0.07);
+                background: rgba(255,255,255,0.02);
+            }
+
+            .pricing-showcase__next-label {
+                color: #8ea0c5;
+                font-size: 0.78rem;
+                text-transform: uppercase;
+                letter-spacing: 0.16em;
+                font-weight: 700;
+                margin-bottom: 10px;
+            }
+
+            .pricing-showcase__next-value {
+                color: #ffffff;
+                font-size: 1.18rem;
+                font-weight: 800;
+                line-height: 1.3;
+                letter-spacing: -0.02em;
+            }
+
+            .pricing-showcase__next-value small {
+                display: block;
+                color: #9fb0d0;
+                font-size: 0.92rem;
+                font-weight: 600;
+                letter-spacing: 0;
+                margin-top: 6px;
+            }
+
+            .pricing-showcase__action-row {
+                display: flex;
+                gap: 14px;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                padding-top: 18px;
+                border-top: 1px solid rgba(255,255,255,0.07);
+            }
+
+            .pricing-showcase__action-copy {
+                color: #c8d3ea;
+                font-size: 0.98rem;
+                line-height: 1.7;
+                max-width: 520px;
+            }
+
+            .pricing-showcase__lock-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                padding: 14px 22px;
+                border-radius: 999px;
+                border: 1px solid rgba(255,255,255,0.12);
+                background: linear-gradient(90deg, rgba(124, 92, 255, 0.92), rgba(52, 211, 153, 0.8));
+                color: #fff;
+                text-decoration: none;
+                font-weight: 800;
+                letter-spacing: -0.01em;
+                box-shadow: 0 10px 32px rgba(124, 92, 255, 0.28);
+                transition: transform 0.25s ease, box-shadow 0.25s ease;
+            }
+
+            .pricing-showcase__lock-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 14px 38px rgba(124, 92, 255, 0.36);
+            }
+
+            @media (max-width: 980px) {
+                .pricing-showcase {
+                    padding: 28px;
+                }
+
+                .pricing-showcase__topbar,
+                .pricing-showcase__grid {
+                    display: block;
+                }
+
+                .pricing-showcase__topbar {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                .pricing-showcase__cta {
+                    min-height: 72px;
+                    min-width: 100%;
+                }
+
+                .pricing-showcase__summary {
+                    border-left: none;
+                    border-top: 1px solid var(--ps-line);
+                }
+
+                .pricing-showcase__labels {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+
+                .pricing-showcase__next-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            @media (max-width: 640px) {
+                .pricing-showcase {
+                    padding: 20px;
+                    border-radius: 24px;
+                }
+
+                .pricing-showcase__milestones,
+                .pricing-showcase__summary {
+                    padding: 22px;
+                }
+
+                .pricing-showcase__labels {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+
+                .pricing-showcase__stats-row,
+                .pricing-showcase__action-row,
+                .pricing-showcase__insight-top {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
+                .pricing-showcase__lock-btn {
+                    width: 100%;
+                }
+            }
+        </style>
     </head>
     <body class="bg-slate-950 text-white">
         @php
             $adoptionBands = config('figma2element.adoption_bands', []);
             $sliderBands = array_slice($adoptionBands, 0, 6);
-            $sliderMaxUsers = 10000;
             try {
                 $currentUsers = \App\Models\User::query()->count();
             } catch (\Throwable) {
                 $currentUsers = 0;
             }
-            $clampedUsers = max(0, min($currentUsers, $sliderMaxUsers));
-            $sliderPercent = $sliderMaxUsers > 0 ? round(($clampedUsers / $sliderMaxUsers) * 100, 2) : 0;
             $currentBand = collect($adoptionBands)->first(function (array $band) use ($currentUsers) {
                 $endUsers = $band['end_users'] ?? null;
 
                 return $currentUsers >= $band['start_users']
                     && ($endUsers === null || $currentUsers <= $endUsers);
             }) ?? ($adoptionBands[0] ?? null);
-            $sliderStops = collect($sliderBands)->values()->map(function (array $band, int $index) use ($sliderBands) {
-                $lastIndex = max(count($sliderBands) - 1, 1);
-                $position = $lastIndex > 0 ? ($index / $lastIndex) * 100 : 0;
-
-                return $band + ['visual_position' => $position];
-            })->all();
-            $currentBandIndex = collect($sliderStops)->search(fn (array $band) => ($band['id'] ?? null) === ($currentBand['id'] ?? null));
-            $currentBandIndex = $currentBandIndex === false ? 0 : $currentBandIndex;
-            $bandStartPosition = $sliderStops[$currentBandIndex]['visual_position'] ?? 0;
-            $bandEndPosition = $sliderStops[min($currentBandIndex + 1, count($sliderStops) - 1)]['visual_position'] ?? 100;
-            $bandStartUsers = $currentBand['start_users'] ?? 0;
-            $bandEndUsers = $currentBand['end_users'] ?? $sliderMaxUsers;
-            $bandUserSpan = max(($bandEndUsers - $bandStartUsers), 1);
-            $bandProgress = min(max(($currentUsers - $bandStartUsers) / $bandUserSpan, 0), 1);
-            $visualSliderPercent = $bandStartPosition + (($bandEndPosition - $bandStartPosition) * $bandProgress);
-            $visualSliderPercent = min(max($visualSliderPercent, 2), 98);
+            $foundersBand = $adoptionBands[0] ?? null;
+            $founderLimit = $foundersBand['end_users'] ?? 100;
+            $founderClaimed = min($currentUsers, $founderLimit);
+            $founderRemaining = max($founderLimit - $founderClaimed, 0);
+            $showFoundersOpen = $founderRemaining > 0;
+            $progressRatio = $founderLimit > 0 ? min($founderClaimed / $founderLimit, 1) : 0;
+            $milestonePositions = [8, 24, 40, 56, 72, 88];
+            $activeMilestoneIndex = collect($sliderBands)->search(fn (array $band) => ($band['id'] ?? null) === ($currentBand['id'] ?? null));
+            $activeMilestoneIndex = $activeMilestoneIndex === false ? 0 : $activeMilestoneIndex;
+            $activePointLeft = $milestonePositions[min($activeMilestoneIndex, count($milestonePositions) - 1)] ?? 8;
+            $progressWidth = max(4, round($activePointLeft, 2));
+            $currentPriceDisplay = ($currentBand['price_label'] ?? 'Free') === 'Free'
+                ? 'Free'
+                : preg_replace('/\/mo$/', '', $currentBand['price_label']);
+            $currentPriceSuffix = ($currentBand['price_label'] ?? 'Free') === 'Free' ? '' : '/mo';
         @endphp
         <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(242,78,30,0.18),_transparent_35%),linear-gradient(180deg,_#0f172a_0%,_#020617_100%)]">
             <header class="mx-auto max-w-6xl px-6 py-6">
@@ -121,98 +574,100 @@
                     </div>
                 </section>
 
-                <section class="mt-12 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 backdrop-blur">
-                    <div class="flex flex-col gap-4 border-b border-white/10 pb-6 lg:flex-row lg:items-end lg:justify-between">
+                <section class="mt-12 pricing-showcase">
+                    <div class="pricing-showcase__topbar">
                         <div>
-                            <p class="text-sm font-semibold uppercase tracking-[0.22em] text-orange-400">Founders giveaway</p>
-                            <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">Adoption-based pricing with a live public entry point.</h2>
-                            <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-400">
-                                Early users get the lowest public price. Hover the milestones to preview what later users will pay as the community grows.
+                            <div class="pricing-showcase__eyebrow">Founders Giveaway</div>
+                            <h2 class="pricing-showcase__title">Adoption-based pricing with a live milestone bar.</h2>
+                            <p class="pricing-showcase__subtext">
+                                Only <strong>{{ number_format($founderClaimed) }} out of {{ number_format($founderLimit) }}</strong> founder spots are taken.
+                                Early adopters lock in the lowest public entry point before the next milestone unlocks and pricing steps up.
                             </p>
                         </div>
-                        <a href="{{ route('docs') }}#plan-limits-usage" class="inline-flex rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-white/30 hover:bg-white/10">See the full milestone model</a>
+                        <a href="{{ route('docs') }}#plan-limits-usage" class="pricing-showcase__cta">See the full milestone model</a>
                     </div>
 
-                    <div class="mt-8 grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
-                        <div class="rounded-[1.5rem] border border-white/10 bg-slate-950/40 p-6">
-                            <div class="flex items-center justify-between gap-4">
-                                <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Total platform users</div>
-                                <div class="text-sm font-semibold text-white">{{ number_format($currentUsers) }}</div>
+                    <div class="pricing-showcase__grid">
+                        <div class="pricing-showcase__milestones">
+                            <div class="pricing-showcase__section-label">Total Platform Users</div>
+
+                            <div class="pricing-showcase__stats-row">
+                                <div class="pricing-showcase__big-number">{{ number_format($founderClaimed) }}/{{ number_format($founderLimit) }}</div>
+                                <div class="pricing-showcase__mini-chip">{{ number_format($founderRemaining) }} founder spots still available</div>
                             </div>
 
-                            <div class="relative mt-8 px-3 pt-16 pb-10 sm:px-6">
-                                <div class="absolute inset-x-3 top-16 h-1 rounded-full bg-white/10 sm:inset-x-6"></div>
-                                <div
-                                    class="absolute left-3 right-auto top-16 h-1 rounded-full bg-[linear-gradient(90deg,#93c5fd_0%,#c084fc_45%,#f59e0b_78%,#ef4444_100%)] transition-[width] duration-[1800ms] ease-out sm:left-6"
-                                    data-slider-fill
-                                    style="width: 0%"
-                                    data-target-width="calc({{ $visualSliderPercent }}% - 0.75rem)"
-                                ></div>
+                            <div class="pricing-showcase__track-wrap">
+                                <div class="pricing-showcase__track">
+                                    <div
+                                        class="pricing-showcase__progress"
+                                        data-pricing-progress
+                                        data-target-width="{{ $progressWidth }}%"
+                                    ></div>
+                                    @foreach ($sliderBands as $index => $band)
+                                        <span
+                                            class="pricing-showcase__point {{ $index === $activeMilestoneIndex ? 'is-active' : '' }}"
+                                            data-pricing-point
+                                            data-target-left="{{ $milestonePositions[$index] ?? 88 }}%"
+                                            style="left: {{ $milestonePositions[$index] ?? 88 }}%;"
+                                        ></span>
+                                    @endforeach
+                                </div>
 
-                                @foreach ($sliderStops as $index => $band)
-                                    @php
-                                        $stopUsers = $band['end_users'] ?? $sliderMaxUsers;
-                                        $stopPercent = $band['visual_position'];
-                                        $alignClass = $index === 0 ? 'left-0' : ($index === count($sliderStops) - 1 ? 'right-0' : 'left-1/2 -translate-x-1/2');
-                                    @endphp
-                                    <div class="absolute top-[3.1rem] h-6 w-px bg-white/10" style="left: {{ $stopPercent }}%"></div>
-                                    <div class="group absolute top-0" style="left: {{ $stopPercent }}%">
-                                        <div class="relative {{ $alignClass }}">
-                                            <button type="button" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950/80 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-orange-300/40 hover:text-white">
-                                                <span>{{ $band['price_label'] }}</span>
-                                            </button>
-                                            <div class="pointer-events-none absolute top-full z-10 mt-3 w-40 rounded-2xl border border-white/10 bg-slate-950/95 p-3 text-left opacity-0 shadow-[0_18px_40px_rgba(2,6,23,0.45)] transition duration-200 group-hover:opacity-100 {{ $alignClass }}">
-                                                <div class="text-[10px] uppercase tracking-[0.2em] text-slate-500">{{ $band['name'] }}</div>
-                                                <div class="mt-1 text-sm font-semibold text-white">{{ $band['price_label'] }}</div>
-                                                <div class="mt-1 text-xs leading-5 text-slate-400">Up to {{ number_format($stopUsers) }} total users.</div>
-                                            </div>
+                                <div class="pricing-showcase__labels">
+                                    @foreach ($sliderBands as $index => $band)
+                                        <div class="pricing-showcase__pill {{ $index === $activeMilestoneIndex ? 'is-active' : '' }}">
+                                            {{ number_format($band['end_users'] ?? 10000) }}{{ ($band['end_users'] ?? null) ? ' users' : '+' }}
                                         </div>
-                                    </div>
-                                    <div class="absolute top-[4.8rem] w-24 -translate-x-1/2 text-center" style="left: {{ $stopPercent }}%">
-                                        <div class="text-[11px] font-medium text-slate-500">{{ number_format($stopUsers) }}</div>
-                                    </div>
-                                @endforeach
+                                    @endforeach
+                                </div>
+                            </div>
 
-                                <div
-                                    class="absolute top-[2.65rem] h-6 w-6 -translate-x-1/2 rounded-full border-2 border-white bg-orange-400 shadow-[0_0_0_5px_rgba(251,146,60,0.14)] transition-[left] duration-[1800ms] ease-out"
-                                    data-slider-thumb
-                                    style="left: 0%"
-                                    data-target-left="{{ $visualSliderPercent }}%"
-                                ></div>
-                                <div
-                                    class="absolute top-[5.7rem] -translate-x-1/2 rounded-full border border-orange-400/20 bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-200 transition-[left] duration-[1800ms] ease-out"
-                                    data-slider-badge
-                                    style="left: 0%"
-                                    data-target-left="{{ $visualSliderPercent }}%"
-                                >
-                                    {{ number_format($currentUsers) }} users
+                            <div class="pricing-showcase__insights">
+                                <div class="pricing-showcase__insight-top">
+                                    <div class="pricing-showcase__insight-title"><span class="pricing-showcase__icon">⚡</span>Why join now</div>
+                                    <div class="pricing-showcase__insight-badge">{{ $showFoundersOpen ? 'Founders tier is live' : 'Founders tier is closed' }}</div>
                                 </div>
 
-                                <div class="mt-20 flex items-center justify-between text-xs font-medium text-slate-500">
-                                    <span>0</span>
-                                    <span>{{ number_format($sliderMaxUsers) }}+</span>
+                                <div class="pricing-showcase__next-grid">
+                                    <div class="pricing-showcase__next-card">
+                                        <div class="pricing-showcase__next-label">You are here</div>
+                                        <div class="pricing-showcase__next-value">{{ $currentBand['price_label'] ?? 'Free' }}<small>{{ $showFoundersOpen ? 'Reserved for the first 100 users' : 'Current public entry band' }}</small></div>
+                                    </div>
+                                    <div class="pricing-showcase__next-card">
+                                        <div class="pricing-showcase__next-label">Next milestone</div>
+                                        <div class="pricing-showcase__next-value">{{ number_format($founderLimit) }} users<small>Then the public entry price steps up</small></div>
+                                    </div>
+                                    <div class="pricing-showcase__next-card">
+                                        <div class="pricing-showcase__next-label">Availability</div>
+                                        <div class="pricing-showcase__next-value">{{ number_format($founderRemaining) }} seats left<small>Join before founder access closes</small></div>
+                                    </div>
+                                </div>
+
+                                <div class="pricing-showcase__action-row">
+                                    <div class="pricing-showcase__action-copy">
+                                        Lock in founder access while seats are still open. Once the first {{ number_format($founderLimit) }} users join, this milestone closes and the next public price becomes active.
+                                    </div>
+                                    <a href="{{ route('register') }}" class="pricing-showcase__lock-btn">Lock in {{ $currentBand['price_label'] ?? 'Free' }} access →</a>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="rounded-[1.5rem] border border-white/10 bg-slate-950/40 p-6">
-                            <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Current public entry</div>
-                            <div class="mt-4 flex items-end gap-2">
-                                <div class="text-5xl font-semibold tracking-tight text-white">
-                                    {{ $currentBand['price_label'] === 'Free' ? 'Free' : $currentBand['price_label'] }}
-                                </div>
+                        <aside class="pricing-showcase__summary">
+                            <div>
+                                <div class="pricing-showcase__section-label">Current Public Entry</div>
+                                <div class="pricing-showcase__price">{{ $currentPriceDisplay }}<span style="font-size: clamp(1.8rem, 2.5vw, 3rem); font-weight: 600;">{{ $currentPriceSuffix }}</span></div>
+                                <div class="pricing-showcase__mini-chip">{{ number_format($founderRemaining) }} seats remaining</div>
+                                <p class="pricing-showcase__description">
+                                    {{ number_format($founderRemaining) }} of the {{ number_format($founderLimit) }} founder seats are still available.
+                                    Join now to secure {{ strtolower($currentBand['price_label'] ?? 'free') }} access before this opening fills and the public entry price increases.
+                                </p>
                             </div>
-                            <div class="mt-4 inline-flex rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-slate-300">
-                                {{ $currentBand['name'] ?? 'Founders' }} band
+
+                            <div class="pricing-showcase__summary-footer">
+                                <div class="pricing-showcase__mini-chip"><strong>{{ number_format($founderClaimed) }}/{{ number_format($founderLimit) }}</strong>&nbsp;founder seats claimed</div>
+                                <div class="pricing-showcase__mini-chip"><strong>{{ number_format($founderRemaining) }}</strong>&nbsp;spots remaining</div>
                             </div>
-                            <p class="mt-6 text-sm leading-7 text-slate-400">
-                                The first 100 users join free, then the public entry price steps upward as adoption grows. The current marker tracks where the product community is right now.
-                            </p>
-                            <div class="mt-6 flex flex-wrap gap-3">
-                                <div class="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-slate-300">{{ number_format($currentUsers) }} total users</div>
-                                <div class="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-slate-300">{{ $currentBand['price_label'] ?? 'Free' }} current price</div>
-                            </div>
-                        </div>
+                        </aside>
                     </div>
                 </section>
             </main>
@@ -223,25 +678,9 @@
         </div>
         <script>
             window.addEventListener('DOMContentLoaded', () => {
-                const fill = document.querySelector('[data-slider-fill]');
-                const thumbs = document.querySelectorAll('[data-slider-thumb]');
-                const badges = document.querySelectorAll('[data-slider-badge]');
-
-                if (fill) {
+                document.querySelectorAll('[data-pricing-progress]').forEach((bar) => {
                     window.requestAnimationFrame(() => {
-                        fill.style.width = fill.dataset.targetWidth || '0%';
-                    });
-                }
-
-                thumbs.forEach((thumb) => {
-                    window.requestAnimationFrame(() => {
-                        thumb.style.left = thumb.dataset.targetLeft || '0%';
-                    });
-                });
-
-                badges.forEach((badge) => {
-                    window.requestAnimationFrame(() => {
-                        badge.style.left = badge.dataset.targetLeft || '0%';
+                        bar.style.width = bar.dataset.targetWidth || '0%';
                     });
                 });
             });
