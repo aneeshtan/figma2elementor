@@ -105,8 +105,8 @@
                     </div>
                 </section>
 
-                <section class="mt-12 overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur">
-                    <div class="grid gap-8 lg:grid-cols-[0.88fr_1.12fr] lg:items-start">
+                <section class="mt-12 overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.96),rgba(17,24,39,0.9))] p-8 shadow-[0_30px_80px_rgba(2,6,23,0.45)] backdrop-blur">
+                    <div class="grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
                         <div>
                             <p class="text-sm font-semibold uppercase tracking-[0.22em] text-orange-400">Founders giveaway</p>
                             <h2 class="mt-4 text-3xl font-semibold tracking-tight text-white">The first 100 platform users join free.</h2>
@@ -114,37 +114,37 @@
                                 This is the public incentive for early adopters. As total users grow, the entry price for new signups moves through
                                 published milestones, but the first cohort gets the lowest possible starting point.
                             </p>
-                            <div class="mt-6 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                            <div class="mt-6 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
                                 <div class="text-xs uppercase tracking-[0.2em] text-slate-500">Current band</div>
                                 <div class="text-sm font-semibold text-white">{{ $currentBand['name'] ?? 'Founders' }}</div>
-                                <div class="rounded-full border border-orange-400/20 bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-200">{{ $currentBand['price_label'] ?? 'Free' }}</div>
+                                <div class="rounded-full border border-orange-400/25 bg-orange-500/15 px-3 py-1 text-xs font-semibold text-orange-200">{{ $currentBand['price_label'] ?? 'Free' }}</div>
                             </div>
                             <a href="{{ route('docs') }}#plan-limits-usage" class="mt-5 inline-flex rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-white/30 hover:bg-white/10">See the full milestone model</a>
                         </div>
-                        <div class="rounded-[1.75rem] border border-white/10 bg-black/20 p-5 sm:p-6">
-                            <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div class="rounded-[1.75rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.88),rgba(2,6,23,0.75))] p-5 sm:p-6">
+                            <div class="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
                                 <div>
-                                    <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Community heat</div>
-                                    <div class="mt-2 text-2xl font-semibold text-white">{{ number_format($currentUsers) }} users</div>
+                                    <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Live community heat</div>
+                                    <div class="mt-2 text-3xl font-semibold text-white">{{ number_format($currentUsers) }} <span class="text-lg font-medium text-slate-400">users</span></div>
                                 </div>
-                                <div class="text-right">
-                                    <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Entry price right now</div>
-                                    <div class="mt-2 text-2xl font-semibold text-orange-300">{{ $currentBand['price_label'] ?? 'Free' }}</div>
+                                <div class="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-right">
+                                    <div class="text-[11px] uppercase tracking-[0.24em] text-slate-500">Current entry</div>
+                                    <div class="mt-1 text-2xl font-semibold text-orange-300">{{ $currentBand['price_label'] ?? 'Free' }}</div>
                                 </div>
                             </div>
 
-                            <div class="mt-8">
-                                <div class="mb-3 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                                    <span>Cold</span>
-                                    <span>Hot</span>
+                            <div class="mt-8 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+                                <div class="mb-4 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+                                    <span class="text-cyan-300">Cold</span>
+                                    <span class="text-rose-300">Hot</span>
                                 </div>
-                                <div class="relative">
+                                <div class="relative px-1 pt-16 pb-20 sm:pt-20 sm:pb-24">
                                     <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 blur-2xl">
-                                        <div class="h-10 rounded-full bg-[linear-gradient(90deg,rgba(56,189,248,0.25)_0%,rgba(59,130,246,0.2)_20%,rgba(168,85,247,0.18)_45%,rgba(249,115,22,0.24)_72%,rgba(239,68,68,0.3)_100%)]"></div>
+                                        <div class="h-12 rounded-full bg-[linear-gradient(90deg,rgba(34,211,238,0.28)_0%,rgba(59,130,246,0.26)_20%,rgba(168,85,247,0.22)_45%,rgba(249,115,22,0.28)_72%,rgba(244,63,94,0.34)_100%)]"></div>
                                     </div>
-                                    <div class="relative h-6 overflow-hidden rounded-full border border-white/10 bg-slate-950/80">
+                                    <div class="relative h-7 overflow-hidden rounded-full border border-white/10 bg-slate-950/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                                         <div
-                                            class="absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,#38bdf8_0%,#3b82f6_22%,#a855f7_48%,#f97316_74%,#ef4444_100%)] transition-[width] duration-[1800ms] ease-out"
+                                            class="absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,#22d3ee_0%,#3b82f6_18%,#8b5cf6_42%,#f97316_72%,#f43f5e_100%)] transition-[width] duration-[1800ms] ease-out"
                                             data-slider-fill
                                             style="width: 0%"
                                             data-target-width="{{ $sliderPercent }}%"
@@ -158,14 +158,34 @@
                                     >
                                         <div class="absolute inset-1 rounded-full bg-[radial-gradient(circle_at_30%_30%,#fff8db_0%,#f97316_55%,#7c2d12_100%)]"></div>
                                     </div>
-                                </div>
-                                <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
-                                    <span>0 users</span>
-                                    <span>{{ number_format($sliderMaxUsers) }}+ users</span>
+                                    <div
+                                        class="absolute top-2 -translate-x-1/2 rounded-2xl border border-orange-400/25 bg-slate-950/90 px-3 py-2 text-center shadow-[0_10px_30px_rgba(15,23,42,0.4)] transition-[left] duration-[1800ms] ease-out"
+                                        data-slider-thumb
+                                        style="left: 0%"
+                                        data-target-left="{{ $sliderPercent }}%"
+                                    >
+                                        <div class="text-[10px] uppercase tracking-[0.2em] text-slate-500">Current</div>
+                                        <div class="mt-1 text-sm font-semibold text-white">{{ number_format($currentUsers) }} users</div>
+                                        <div class="text-xs font-medium text-orange-300">{{ $currentBand['price_label'] ?? 'Free' }}</div>
+                                    </div>
+
+                                    @foreach ($sliderBands as $band)
+                                        @php
+                                            $markerUsers = $band['end_users'] ?? $sliderMaxUsers;
+                                            $markerPercent = $sliderMaxUsers > 0 ? round((min($markerUsers, $sliderMaxUsers) / $sliderMaxUsers) * 100, 2) : 0;
+                                        @endphp
+                                        <div class="absolute top-[4.4rem] bottom-[3.9rem] w-px bg-white/10" style="left: {{ $markerPercent }}%"></div>
+                                        <div class="absolute bottom-0 w-28 -translate-x-1/2" style="left: {{ $markerPercent }}%">
+                                            <div class="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2 text-center shadow-[0_10px_30px_rgba(15,23,42,0.22)]">
+                                                <div class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{{ number_format($markerUsers) }} users</div>
+                                                <div class="mt-1 text-sm font-semibold text-white">{{ $band['price_label'] }}</div>
+                                            </div>
+                                        </div>
+                                    @endforeach
                                 </div>
                             </div>
 
-                            <div class="mt-7 grid gap-3 sm:grid-cols-3">
+                            <div class="mt-6 grid gap-3 sm:grid-cols-3">
                                 @foreach ($sliderBands as $band)
                                     @php
                                         $isActiveBand = ($currentBand['id'] ?? null) === $band['id'];
