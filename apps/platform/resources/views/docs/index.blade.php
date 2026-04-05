@@ -56,7 +56,7 @@
                             </div>
                             <div class="px-5 py-5">
                                 <div class="text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-300">Version</div>
-                                <div class="mt-2 text-sm font-semibold text-white">v0.4.0</div>
+                                <div class="mt-2 text-sm font-semibold text-white">v0.4.2</div>
                                 <div class="mt-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-orange-300">Last Updated</div>
                                 <div class="mt-2 text-sm text-slate-300">April 3, 2026</div>
                             </div>
