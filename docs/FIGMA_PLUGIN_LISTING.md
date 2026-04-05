@@ -6,11 +6,11 @@ Figma2Element Converter
 
 ## Tagline
 
-Convert Figma frames into Elementor template JSON.
+Convert structured Figma sections into Elementor-ready exports.
 
 ## Short description
 
-Figma2Element Converter takes the selected Figma frame, sends its structure to the Figma2Element API, and returns Elementor-ready JSON that can be downloaded and imported into WordPress.
+Figma2Element Converter sends the selected Figma section to the Figma2Element API and returns Elementor-ready JSON for download and WordPress import. A Figma2Element account and API key are required.
 
 ## Full description
 
@@ -18,10 +18,16 @@ Figma2Element Converter helps designers and builders move faster from design to 
 
 Use the plugin to:
 
-- inspect the current Figma selection
-- send selected frames to the Figma2Element conversion API
+- review the current Figma selection
+- send selected sections to the Figma2Element conversion API
 - generate Elementor-compatible template JSON
-- download the export and import it into Elementor
+- download the export and import it into Elementor or the WordPress companion plugin
+
+Important notes:
+
+- Requires a Figma2Element account and API key
+- Sends only the current selection and required exported layer images, not the full Figma file
+- Some native slider outputs require Elementor Pro; the plugin warns when Pro-only widgets are used
 
 Current capabilities:
 
@@ -43,11 +49,14 @@ Software development
 
 ## Support contact
 
-Replace this with your preferred support email or website contact form.
+Support: support@figma2elementor.ctrlaltl.com
+
+Privacy: https://figma2elementor.ctrlaltl.com/privacy
+
+Support page: https://figma2elementor.ctrlaltl.com/support
 
 ## Screenshot and thumbnail ideas
 
 - Plugin UI open in Figma with a selected hero frame
 - Exported Elementor JSON visible in the plugin output area
 - Website dashboard showing saved jobs and API key setup
-

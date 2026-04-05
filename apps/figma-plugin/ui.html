@@ -73,6 +73,14 @@
         line-height: 1.5;
       }
 
+      .meta a {
+        color: #fdba74;
+      }
+
+      .meta a:hover {
+        color: #fb923c;
+      }
+
       .plugin-header {
         display: flex;
         align-items: baseline;
@@ -121,6 +129,24 @@
         white-space: pre-wrap;
         overflow-wrap: anywhere;
       }
+
+      .helper-card {
+        padding: 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .readonly-field {
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(17, 24, 39, 0.88);
+        color: #f9fafb;
+        padding: 10px 12px;
+        box-sizing: border-box;
+        font: inherit;
+        overflow-wrap: anywhere;
+      }
     </style>
   </head>
   <body>
@@ -129,16 +155,30 @@
         <strong>Figma2Element</strong>
         <span class="plugin-version">v0.4.2</span>
       </div>
-      <div class="meta">Serialize the current selection, send it to the local converter, and download Elementor JSON.</div>
+      <div class="helper-card stack-tight">
+        <div class="meta">
+          Convert the current Figma selection with your Figma2Element account. You need a Figma2Element API key before this plugin can run.
+        </div>
+        <div class="meta">
+          Get your key at
+          <a href="https://figma2elementor.ctrlaltl.com" target="_blank" rel="noreferrer">figma2elementor.ctrlaltl.com</a>.
+        </div>
+        <div class="meta">
+          This plugin sends the selected layer structure and any exported layer images to the Figma2Element API. See
+          <a href="https://figma2elementor.ctrlaltl.com/privacy" target="_blank" rel="noreferrer">Privacy</a>
+          and
+          <a href="https://figma2elementor.ctrlaltl.com/support" target="_blank" rel="noreferrer">Support</a>.
+        </div>
+      </div>
 
       <label class="stack">
         <span class="meta">API endpoint</span>
-        <input id="endpoint" value="https://figma2elementor.ctrlaltl.com/api/convert" />
+        <div id="endpoint" class="readonly-field">https://figma2elementor.ctrlaltl.com/api/convert</div>
       </label>
 
       <label class="stack">
         <span class="meta">API key</span>
-        <input id="api-key" value="f2e_live_local_plugin_key" />
+        <input id="api-key" value="" placeholder="Paste your Figma2Element API key" />
       </label>
 
       <div class="row row-compact">
@@ -250,7 +290,7 @@
           {
             pluginMessage: {
               type: "update-settings",
-              endpoint: endpointEl.value.trim(),
+              endpoint: endpointEl.textContent.trim(),
               apiKey: apiKeyEl.value.trim(),
               exportMode: exportModeEl.value || "auto"
             }
@@ -259,14 +299,8 @@
         );
       }
 
-      endpointEl.value = readStoredValue("f2e:endpoint", endpointEl.value);
       apiKeyEl.value = readStoredValue("f2e:api-key", apiKeyEl.value);
       exportModeEl.value = readStoredValue("f2e:export-mode", exportModeEl.value || "auto");
-
-      endpointEl.oninput = () => {
-        writeStoredValue("f2e:endpoint", endpointEl.value.trim());
-        syncSettingsToController();
-      };
 
       apiKeyEl.oninput = () => {
         writeStoredValue("f2e:api-key", apiKeyEl.value.trim());
@@ -295,7 +329,7 @@
       };
 
       document.querySelector("#convert").onclick = () => {
-        const endpoint = endpointEl.value.trim();
+        const endpoint = endpointEl.textContent.trim();
         const apiKey = apiKeyEl.value.trim();
         const exportMode = exportModeEl.value || "auto";
         const selection = currentSelection();
@@ -396,11 +430,6 @@
 
         if (message.type === "settings-data") {
           const settings = message.payload || {};
-
-          if (typeof settings.endpoint === "string" && settings.endpoint.trim()) {
-            endpointEl.value = settings.endpoint.trim();
-            writeStoredValue("f2e:endpoint", endpointEl.value);
-          }
 
           if (typeof settings.apiKey === "string") {
             apiKeyEl.value = settings.apiKey.trim();

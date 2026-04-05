@@ -14,6 +14,9 @@ Route::get('/docs', function () {
     return view('docs.index');
 })->name('docs');
 
+Route::view('/privacy', 'legal.privacy')->name('privacy');
+Route::view('/support', 'legal.support')->name('support');
+
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/dashboard/jobs/{job}/download', [DashboardController::class, 'download'])->name('dashboard.jobs.download');
