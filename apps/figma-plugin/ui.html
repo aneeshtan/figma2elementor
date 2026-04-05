@@ -364,16 +364,28 @@
             );
             outputEl.value = JSON.stringify(message.payload.template, null, 2);
             downloadEl.disabled = false;
-            const convertedNodes = message.payload.report ? message.payload.report.convertedNodes : 0;
+            const report = message.payload.report || {};
+            const convertedNodes = report.convertedNodes || 0;
             const jobId = message.payload.job ? message.payload.job.id : "saved";
-            const warnings = message.payload.report && message.payload.report.warnings && message.payload.report.warnings.length
-              ? `Warnings: ${message.payload.report.warnings.join(" | ")}`
+            const warnings = report.warnings && report.warnings.length
+              ? `Warnings: ${report.warnings.join(" | ")}`
               : "No mapper warnings.";
-            setStatus(
-              "success",
-              `Conversion complete. Job ${jobId}.`,
-              `Converted nodes: ${convertedNodes}\n${warnings}`
-            );
+            const proWidgets = Array.isArray(report.proWidgetTypes) ? report.proWidgetTypes : [];
+            const requiresElementorPro = Boolean(report.requiresElementorPro);
+
+            if (requiresElementorPro) {
+              setStatus(
+                "error",
+                `Conversion complete. Job ${jobId}. Elementor Pro required.`,
+                `Converted nodes: ${convertedNodes}\nPro widgets: ${proWidgets.join(", ")}\nThis file may fail to import or edit without Elementor Pro active.\n${warnings}`
+              );
+            } else {
+              setStatus(
+                "success",
+                `Conversion complete. Job ${jobId}.`,
+                `Converted nodes: ${convertedNodes}\n${warnings}`
+              );
+            }
           } else {
             outputEl.value = JSON.stringify(message.payload, null, 2);
             setStatus(

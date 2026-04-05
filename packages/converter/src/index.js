@@ -3383,6 +3383,29 @@ function mapNode(node, helpers, depth = 0) {
   return null;
 }
 
+function collectWidgetTypes(nodes, bucket = new Set()) {
+  for (const node of nodes || []) {
+    if (!node) {
+      continue;
+    }
+
+    if (node.elType === "widget" && node.widgetType) {
+      bucket.add(node.widgetType);
+    }
+
+    if (Array.isArray(node.elements) && node.elements.length) {
+      collectWidgetTypes(node.elements, bucket);
+    }
+  }
+
+  return bucket;
+}
+
+function getElementorProWidgetTypes(widgetTypes) {
+  const proOnly = new Set(["slides", "media-carousel"]);
+  return [...widgetTypes].filter((type) => proOnly.has(type)).sort();
+}
+
 export function convertFigmaSelectionToElementor(source) {
   const normalized = normalizeRoot(source);
   const nextId = createIdFactory();
@@ -3398,11 +3421,25 @@ export function convertFigmaSelectionToElementor(source) {
   };
 
   const content = (normalized.children || []).map((node) => mapNode(node, helpers, 0)).filter(Boolean);
+  const widgetTypes = collectWidgetTypes(content);
+  const proWidgetTypes = getElementorProWidgetTypes(widgetTypes);
+  const requiresElementorPro = proWidgetTypes.length > 0;
+
+  if (requiresElementorPro) {
+    helpers.report.warnings.push(
+      `This export uses Elementor Pro widgets: ${proWidgetTypes.join(", ")}. Keep Elementor Pro active to import and edit it.`
+    );
+  }
 
   return {
     ok: true,
     source: normalized,
-    report,
+    report: {
+      ...report,
+      widgetTypes: [...widgetTypes].sort(),
+      requiresElementorPro,
+      proWidgetTypes
+    },
     template: {
       title: normalized.name || "Imported Template",
       slug: slugify(normalized.name || "elementor-template"),
