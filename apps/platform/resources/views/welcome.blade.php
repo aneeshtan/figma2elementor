@@ -9,7 +9,21 @@
     <body class="bg-slate-950 text-white">
         @php
             $adoptionBands = config('figma2element.adoption_bands', []);
-            $featuredBands = array_slice($adoptionBands, 0, 5);
+            $sliderBands = array_slice($adoptionBands, 0, 6);
+            $sliderMaxUsers = 10000;
+            try {
+                $currentUsers = \App\Models\User::query()->count();
+            } catch (\Throwable) {
+                $currentUsers = 0;
+            }
+            $clampedUsers = max(0, min($currentUsers, $sliderMaxUsers));
+            $sliderPercent = $sliderMaxUsers > 0 ? round(($clampedUsers / $sliderMaxUsers) * 100, 2) : 0;
+            $currentBand = collect($adoptionBands)->first(function (array $band) use ($currentUsers) {
+                $endUsers = $band['end_users'] ?? null;
+
+                return $currentUsers >= $band['start_users']
+                    && ($endUsers === null || $currentUsers <= $endUsers);
+            }) ?? ($adoptionBands[0] ?? null);
         @endphp
         <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(242,78,30,0.18),_transparent_35%),linear-gradient(180deg,_#0f172a_0%,_#020617_100%)]">
             <header class="mx-auto max-w-6xl px-6 py-6">
@@ -91,8 +105,8 @@
                     </div>
                 </section>
 
-                <section class="mt-12 rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur">
-                    <div class="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+                <section class="mt-12 overflow-hidden rounded-[2rem] border border-white/10 bg-white/5 p-8 backdrop-blur">
+                    <div class="grid gap-8 lg:grid-cols-[0.88fr_1.12fr] lg:items-start">
                         <div>
                             <p class="text-sm font-semibold uppercase tracking-[0.22em] text-orange-400">Founders giveaway</p>
                             <h2 class="mt-4 text-3xl font-semibold tracking-tight text-white">The first 100 platform users join free.</h2>
@@ -100,25 +114,77 @@
                                 This is the public incentive for early adopters. As total users grow, the entry price for new signups moves through
                                 published milestones, but the first cohort gets the lowest possible starting point.
                             </p>
+                            <div class="mt-6 inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                                <div class="text-xs uppercase tracking-[0.2em] text-slate-500">Current band</div>
+                                <div class="text-sm font-semibold text-white">{{ $currentBand['name'] ?? 'Founders' }}</div>
+                                <div class="rounded-full border border-orange-400/20 bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-200">{{ $currentBand['price_label'] ?? 'Free' }}</div>
+                            </div>
                             <a href="{{ route('docs') }}#plan-limits-usage" class="mt-5 inline-flex rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-white/30 hover:bg-white/10">See the full milestone model</a>
                         </div>
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            @foreach ($featuredBands as $band)
-                                <div class="rounded-2xl border border-white/10 bg-black/20 p-5">
-                                    <div class="flex items-center justify-between gap-3">
-                                        <div class="text-sm font-semibold text-white">{{ $band['name'] }}</div>
-                                        <div class="rounded-full border border-orange-400/20 bg-orange-500/10 px-3 py-1 text-xs font-semibold text-orange-200">{{ $band['price_label'] }}</div>
-                                    </div>
-                                    <p class="mt-2 text-sm leading-6 text-slate-400">
-                                        @if (($band['end_users'] ?? null) !== null)
-                                            Users {{ number_format($band['start_users']) }}-{{ number_format($band['end_users']) }}.
-                                        @else
-                                            Users {{ number_format($band['start_users']) }}+.
-                                        @endif
-                                        {{ $band['summary'] }}
-                                    </p>
+                        <div class="rounded-[1.75rem] border border-white/10 bg-black/20 p-5 sm:p-6">
+                            <div class="flex flex-wrap items-center justify-between gap-4">
+                                <div>
+                                    <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Community heat</div>
+                                    <div class="mt-2 text-2xl font-semibold text-white">{{ number_format($currentUsers) }} users</div>
                                 </div>
-                            @endforeach
+                                <div class="text-right">
+                                    <div class="text-xs uppercase tracking-[0.22em] text-slate-500">Entry price right now</div>
+                                    <div class="mt-2 text-2xl font-semibold text-orange-300">{{ $currentBand['price_label'] ?? 'Free' }}</div>
+                                </div>
+                            </div>
+
+                            <div class="mt-8">
+                                <div class="mb-3 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                                    <span>Cold</span>
+                                    <span>Hot</span>
+                                </div>
+                                <div class="relative">
+                                    <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 blur-2xl">
+                                        <div class="h-10 rounded-full bg-[linear-gradient(90deg,rgba(56,189,248,0.25)_0%,rgba(59,130,246,0.2)_20%,rgba(168,85,247,0.18)_45%,rgba(249,115,22,0.24)_72%,rgba(239,68,68,0.3)_100%)]"></div>
+                                    </div>
+                                    <div class="relative h-6 overflow-hidden rounded-full border border-white/10 bg-slate-950/80">
+                                        <div
+                                            class="absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,#38bdf8_0%,#3b82f6_22%,#a855f7_48%,#f97316_74%,#ef4444_100%)] transition-[width] duration-[1800ms] ease-out"
+                                            data-slider-fill
+                                            style="width: 0%"
+                                            data-target-width="{{ $sliderPercent }}%"
+                                        ></div>
+                                    </div>
+                                    <div
+                                        class="absolute top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40 bg-white/90 shadow-[0_0_30px_rgba(249,115,22,0.45)] transition-[left,transform] duration-[1800ms] ease-out"
+                                        data-slider-thumb
+                                        style="left: 0%"
+                                        data-target-left="{{ $sliderPercent }}%"
+                                    >
+                                        <div class="absolute inset-1 rounded-full bg-[radial-gradient(circle_at_30%_30%,#fff8db_0%,#f97316_55%,#7c2d12_100%)]"></div>
+                                    </div>
+                                </div>
+                                <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
+                                    <span>0 users</span>
+                                    <span>{{ number_format($sliderMaxUsers) }}+ users</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-7 grid gap-3 sm:grid-cols-3">
+                                @foreach ($sliderBands as $band)
+                                    @php
+                                        $isActiveBand = ($currentBand['id'] ?? null) === $band['id'];
+                                    @endphp
+                                    <div class="rounded-2xl border px-4 py-3 {{ $isActiveBand ? 'border-orange-400/35 bg-orange-500/10' : 'border-white/10 bg-slate-950/30' }}">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <div class="text-sm font-semibold {{ $isActiveBand ? 'text-white' : 'text-slate-200' }}">{{ $band['name'] }}</div>
+                                            <div class="text-xs font-semibold {{ $isActiveBand ? 'text-orange-200' : 'text-slate-400' }}">{{ $band['price_label'] }}</div>
+                                        </div>
+                                        <div class="mt-2 text-xs leading-5 {{ $isActiveBand ? 'text-orange-100/80' : 'text-slate-500' }}">
+                                            @if (($band['end_users'] ?? null) !== null)
+                                                {{ number_format($band['start_users']) }}-{{ number_format($band['end_users']) }} users
+                                            @else
+                                                {{ number_format($band['start_users']) }}+ users
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -128,5 +194,23 @@
                 <x-platform-footer class="border-t border-white/10 pt-6" />
             </div>
         </div>
+        <script>
+            window.addEventListener('DOMContentLoaded', () => {
+                const fill = document.querySelector('[data-slider-fill]');
+                const thumb = document.querySelector('[data-slider-thumb]');
+
+                if (fill) {
+                    window.requestAnimationFrame(() => {
+                        fill.style.width = fill.dataset.targetWidth || '0%';
+                    });
+                }
+
+                if (thumb) {
+                    window.requestAnimationFrame(() => {
+                        thumb.style.left = thumb.dataset.targetLeft || '0%';
+                    });
+                }
+            });
+        </script>
     </body>
 </html>
