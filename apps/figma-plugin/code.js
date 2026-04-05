@@ -1007,6 +1007,11 @@ figma.ui.onmessage = async (message) => {
         throw new Error("No frame or layer is selected. Select a Figma frame, then click Convert again.");
       }
 
+      const exportMode = typeof message.exportMode === "string" && message.exportMode ? message.exportMode : "auto";
+      selectionPayload.conversionHints = Object.assign({}, selectionPayload.conversionHints || {}, {
+        exportMode
+      });
+
       const response = await fetch(message.endpoint, {
         method: "POST",
         headers: {

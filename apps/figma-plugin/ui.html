@@ -27,6 +27,7 @@
       }
 
       input,
+      select,
       button,
       textarea {
         width: 100%;
@@ -140,6 +141,14 @@
         <input id="api-key" value="f2e_live_local_plugin_key" />
       </label>
 
+      <label class="stack">
+        <span class="meta">Export mode</span>
+        <select id="export-mode">
+          <option value="auto">Auto (Best match)</option>
+          <option value="core-safe">Normal (No Elementor Pro widgets)</option>
+        </select>
+      </label>
+
       <div class="row">
         <button id="refresh" class="secondary" type="button">Refresh selection</button>
         <button id="convert" type="button">Convert</button>
@@ -167,6 +176,7 @@
       const selectionEl = document.querySelector("#selection");
       const outputEl = document.querySelector("#output");
       const downloadEl = document.querySelector("#download");
+      const exportModeEl = document.querySelector("#export-mode");
       const statusEl = document.querySelector("#status");
       const detailEl = document.querySelector("#detail");
       const convertButton = document.querySelector("#convert");
@@ -232,6 +242,7 @@
 
       endpointEl.value = readStoredValue("f2e:endpoint", endpointEl.value);
       apiKeyEl.value = readStoredValue("f2e:api-key", apiKeyEl.value);
+      exportModeEl.value = readStoredValue("f2e:export-mode", exportModeEl.value || "auto");
 
       endpointEl.oninput = () => {
         writeStoredValue("f2e:endpoint", endpointEl.value.trim());
@@ -239,6 +250,10 @@
 
       apiKeyEl.oninput = () => {
         writeStoredValue("f2e:api-key", apiKeyEl.value.trim());
+      };
+
+      exportModeEl.oninput = () => {
+        writeStoredValue("f2e:export-mode", exportModeEl.value);
       };
 
       document.querySelector("#refresh").onclick = () => {
@@ -249,6 +264,7 @@
       document.querySelector("#convert").onclick = () => {
         const endpoint = endpointEl.value.trim();
         const apiKey = apiKeyEl.value.trim();
+        const exportMode = exportModeEl.value || "auto";
         const selection = currentSelection();
 
         if (!endpoint) {
@@ -277,7 +293,7 @@
         setStatus(
           "loading",
           "Sending selection to the API...",
-          `Endpoint: ${endpoint}\nSelected root: ${selection.name || "Untitled selection"}\nSelected nodes: ${selection.children.length}`
+          `Endpoint: ${endpoint}\nSelected root: ${selection.name || "Untitled selection"}\nSelected nodes: ${selection.children.length}\nExport mode: ${exportMode}`
         );
 
         parent.postMessage(
@@ -285,7 +301,8 @@
             pluginMessage: {
               type: "convert-selection",
               endpoint,
-              apiKey
+              apiKey,
+              exportMode
             }
           },
           "*"
@@ -372,18 +389,19 @@
               : "No mapper warnings.";
             const proWidgets = Array.isArray(report.proWidgetTypes) ? report.proWidgetTypes : [];
             const requiresElementorPro = Boolean(report.requiresElementorPro);
+            const exportMode = report.exportMode || exportModeEl.value || "auto";
 
             if (requiresElementorPro) {
               setStatus(
                 "error",
                 `Conversion complete. Job ${jobId}. Elementor Pro required.`,
-                `Converted nodes: ${convertedNodes}\nPro widgets: ${proWidgets.join(", ")}\nThis file may fail to import or edit without Elementor Pro active.\n${warnings}`
+                `Converted nodes: ${convertedNodes}\nExport mode: ${exportMode}\nPro widgets: ${proWidgets.join(", ")}\nThis file may fail to import or edit without Elementor Pro active.\n${warnings}`
               );
             } else {
               setStatus(
                 "success",
                 `Conversion complete. Job ${jobId}.`,
-                `Converted nodes: ${convertedNodes}\n${warnings}`
+                `Converted nodes: ${convertedNodes}\nExport mode: ${exportMode}\n${warnings}`
               );
             }
           } else {

@@ -482,6 +482,15 @@ function getRootConversionHints(helpers) {
     : null;
 }
 
+function getExportMode(helpers) {
+  const hints = getRootConversionHints(helpers);
+  return hints && typeof hints.exportMode === "string" && hints.exportMode ? hints.exportMode : "auto";
+}
+
+function isCoreSafeMode(helpers) {
+  return getExportMode(helpers) === "core-safe";
+}
+
 function shouldForceNativeImageCarousel(node, helpers) {
   const hints = getRootConversionHints(helpers);
   const ids = hints && Array.isArray(hints.forceNativeImageCarouselIds) ? hints.forceNativeImageCarouselIds : [];
@@ -2487,6 +2496,7 @@ function hasExplicitSliderDescendant(node) {
 }
 
 function mapSliderSection(node, helpers, depth, sliderPattern) {
+  const coreSafeMode = isCoreSafeMode(helpers);
   const slideData = normalizeSlideDataForCarousel(
     sliderPattern.cards.map((card) => extractSlideCardData(card)).filter(Boolean)
   );
@@ -2494,9 +2504,11 @@ function mapSliderSection(node, helpers, depth, sliderPattern) {
   const isLogoOnlyTrack = sliderPattern.cards.every((card) => isLogoLikeTrackCard(card));
   const rawLogoSlides = sliderPattern.cards.map((card) => extractRawLogoSlideFromCard(card)).filter(Boolean);
   const useNativeImageCarousel =
+    !coreSafeMode &&
     rawLogoSlides.length === sliderPattern.cards.length &&
     (isLogoOnlyTrack || isExplicitLogoCarousel(node, sliderPattern) || shouldForceNativeImageCarousel(node, helpers));
   const useNativeSlidesWidget =
+    !coreSafeMode &&
     !useNativeImageCarousel &&
     slideData.length === sliderPattern.cards.length &&
     slideData.every((slide) => slide.type === "content") &&
@@ -3424,11 +3436,14 @@ export function convertFigmaSelectionToElementor(source) {
   const widgetTypes = collectWidgetTypes(content);
   const proWidgetTypes = getElementorProWidgetTypes(widgetTypes);
   const requiresElementorPro = proWidgetTypes.length > 0;
+  const exportMode = getExportMode(helpers);
 
   if (requiresElementorPro) {
     helpers.report.warnings.push(
       `This export uses Elementor Pro widgets: ${proWidgetTypes.join(", ")}. Keep Elementor Pro active to import and edit it.`
     );
+  } else if (exportMode === "core-safe") {
+    helpers.report.warnings.push("Core-safe export mode is enabled. Pro-only widgets were avoided where possible.");
   }
 
   return {
@@ -3437,6 +3452,7 @@ export function convertFigmaSelectionToElementor(source) {
     report: {
       ...report,
       widgetTypes: [...widgetTypes].sort(),
+      exportMode,
       requiresElementorPro,
       proWidgetTypes
     },
