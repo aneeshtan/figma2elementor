@@ -368,7 +368,7 @@ Text 18</code></pre>
                         <section id="usage" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">Plan Limits & Usage</h2>
                             <p class="mt-4 text-base leading-8 text-slate-300">
-                                Each successful conversion job consumes one unit of usage. Job history, API key activity, and plan-level access live in the same dashboard.
+                                Each successful conversion job consumes one unit of usage. Pricing follows milestone bands instead of one flat jump, so you can start free and only move up when volume crosses the next threshold.
                             </p>
                             <div class="mt-6 overflow-hidden rounded-[1.5rem] border border-white/10">
                                 <table class="min-w-full divide-y divide-white/10 text-sm">
@@ -382,17 +382,22 @@ Text 18</code></pre>
                                     <tbody class="divide-y divide-white/10 bg-white/5 text-slate-200">
                                         <tr>
                                             <td class="px-5 py-4">Free</td>
-                                            <td class="px-5 py-4">Starter quota</td>
-                                            <td class="px-5 py-4">Good for testing the full flow</td>
+                                            <td class="px-5 py-4">Up to 20 exports / month</td>
+                                            <td class="px-5 py-4">Best for testing the workflow at zero cost</td>
                                         </tr>
                                         <tr>
-                                            <td class="px-5 py-4">$9</td>
-                                            <td class="px-5 py-4">Expanded monthly usage</td>
-                                            <td class="px-5 py-4">Best for regular project exports</td>
+                                            <td class="px-5 py-4">Launch · $19/mo</td>
+                                            <td class="px-5 py-4">Up to 100 exports / month</td>
+                                            <td class="px-5 py-4">First paid milestone for regular solo production</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-5 py-4">Growth · $49/mo</td>
+                                            <td class="px-5 py-4">Up to 400 exports / month</td>
+                                            <td class="px-5 py-4">Higher-volume milestone for active weekly delivery</td>
                                         </tr>
                                         <tr>
                                             <td class="px-5 py-4">Custom</td>
-                                            <td class="px-5 py-4">Tailored allocation</td>
+                                            <td class="px-5 py-4">Tailored milestone or volume allocation</td>
                                             <td class="px-5 py-4">For agencies, teams, or higher-volume workflows</td>
                                         </tr>
                                     </tbody>

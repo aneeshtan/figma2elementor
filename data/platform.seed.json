@@ -6,28 +6,44 @@
       "priceMonthly": 0,
       "priceLabel": "Free",
       "priceSuffix": "",
-      "exportsPerMonth": 10,
+      "exportsPerMonth": 20,
       "seats": 1,
       "features": [
-        "10 exports per month",
+        "Starts at zero cost",
+        "20 exports per month",
         "1 Figma plugin key",
-        "Basic widget support",
+        "Milestone pricing model",
         "Community support"
       ]
     },
     {
-      "id": "pro",
-      "name": "Pro",
-      "priceMonthly": 9,
-      "priceLabel": "$9",
+      "id": "launch",
+      "name": "Launch",
+      "priceMonthly": 19,
+      "priceLabel": "$19",
       "priceSuffix": "/month",
-      "exportsPerMonth": 75,
+      "exportsPerMonth": 100,
       "seats": 1,
       "features": [
-        "75 exports per month",
+        "100 exports per month",
         "Multiple API keys",
         "Priority support",
-        "Advanced widget mapping"
+        "First paid milestone"
+      ]
+    },
+    {
+      "id": "growth",
+      "name": "Growth",
+      "priceMonthly": 49,
+      "priceLabel": "$49",
+      "priceSuffix": "/month",
+      "exportsPerMonth": 400,
+      "seats": 2,
+      "features": [
+        "400 exports per month",
+        "Higher throughput",
+        "Faster support",
+        "High-volume milestone"
       ]
     },
     {
@@ -52,7 +68,7 @@
       "name": "Local Studio",
       "slug": "local-studio",
       "email": "founder@figma2element.local",
-      "planId": "pro",
+      "planId": "launch",
       "usage": {
         "period": "2026-04",
         "exportsUsed": 0

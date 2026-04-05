@@ -45,6 +45,9 @@
                                     · Active subscription
                                 @endif
                             </p>
+                            <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                                Milestone pricing starts at zero and only steps up when your monthly export volume crosses the next threshold.
+                            </p>
                         </div>
                         <div class="rounded-2xl bg-slate-100 px-4 py-3 text-right dark:bg-slate-900">
                             <div class="text-xs uppercase tracking-[0.18em] text-slate-500">This month</div>
@@ -53,7 +56,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-6 grid gap-4 md:grid-cols-3">
+                    <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         @foreach ($plans as $planKey => $plan)
                             <div class="rounded-2xl border {{ $planKey === $currentPlanKey ? 'border-orange-400 bg-orange-50/60 dark:border-orange-500 dark:bg-orange-950/20' : 'border-slate-200 dark:border-slate-700' }} p-4">
                                 <div class="flex items-center justify-between gap-3">
@@ -70,11 +73,11 @@
                                         <form method="POST" action="{{ route('billing.checkout', $planKey) }}">
                                             @csrf
                                             <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200">
-                                                {{ $subscription && $subscription->valid() ? 'Manage Billing' : 'Start Subscription' }}
+                                                {{ $subscription && $subscription->valid() ? 'Manage Billing' : 'Choose milestone' }}
                                             </button>
                                         </form>
                                     @elseif (($plan['billing_type'] ?? 'none') === 'contact')
-                                        <a href="mailto:hello@figma2element.com?subject=Custom%20Plan" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 dark:border-slate-600 dark:text-slate-200">
+                                        <a href="mailto:support@figma2elementor.ctrlaltl.com?subject=Custom%20Milestone%20Plan" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 dark:border-slate-600 dark:text-slate-200">
                                             Contact Sales
                                         </a>
                                     @else
