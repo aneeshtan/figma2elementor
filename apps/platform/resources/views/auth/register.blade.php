@@ -5,6 +5,28 @@
         <p class="mt-3 text-sm leading-6 text-slate-400">Create your account to issue plugin API keys, manage billing, and track conversion exports.</p>
     </div>
 
+    <div class="mb-6 space-y-3">
+        <a
+            href="{{ route('auth.google.redirect') }}"
+            class="flex w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:border-orange-400/50 hover:bg-white/10"
+        >
+            <svg class="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.9 1.5l2.7-2.6C17 3.3 14.8 2.3 12 2.3A9.7 9.7 0 0 0 2.3 12 9.7 9.7 0 0 0 12 21.7c5.6 0 9.3-3.9 9.3-9.5 0-.6-.1-1.1-.2-1.5H12Z"/>
+                <path fill="#34A853" d="M2.3 12c0 1.6.4 3.1 1.2 4.4l3.5-2.7a6 6 0 0 1 0-3.4L3.5 7.6A9.6 9.6 0 0 0 2.3 12Z"/>
+                <path fill="#FBBC05" d="M12 21.7c2.8 0 5.2-.9 6.9-2.5l-3.4-2.6c-.9.6-2 .9-3.5.9-2.5 0-4.7-1.7-5.5-4l-3.5 2.7A9.7 9.7 0 0 0 12 21.7Z"/>
+                <path fill="#4285F4" d="M18.9 19.2c2-1.8 3.1-4.4 3.1-7.5 0-.6-.1-1.1-.2-1.5H12v3.9h5.5c-.2 1.1-.8 2.1-1.8 2.8l3.2 2.3Z"/>
+            </svg>
+            Continue with Google
+        </a>
+        <p class="text-center text-xs text-slate-500">Use Google to create your account without setting a separate password first.</p>
+    </div>
+
+    <div class="mb-6 flex items-center gap-3 text-xs uppercase tracking-[0.22em] text-slate-500">
+        <span class="h-px flex-1 bg-white/10"></span>
+        <span>Or register with email</span>
+        <span class="h-px flex-1 bg-white/10"></span>
+    </div>
+
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
