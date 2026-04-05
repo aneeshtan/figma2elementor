@@ -2458,13 +2458,8 @@ function buildNativeSlidesNode(node, slides, options, helpers) {
         description: slide.body || "",
         button_text: slide.button?.text || "",
         background_image: {
-          url: slide.imageUrl || "",
-          id: "",
-          size: "",
-          alt: slide.title || "",
-          source: "external"
-        },
-        background_color: slide.panelColor || "#c2e3ed"
+          url: slide.imageUrl || ""
+        }
       })),
       navigation: slides.length > 1 ? "dots" : "none",
       autoplay: options.autoplay ? "yes" : "",
@@ -2474,6 +2469,21 @@ function buildNativeSlidesNode(node, slides, options, helpers) {
     },
     elements: []
   };
+}
+
+function hasExplicitSliderDescendant(node) {
+  if (!node || !Array.isArray(node.children)) {
+    return false;
+  }
+
+  for (let index = 0; index < node.children.length; index += 1) {
+    const child = node.children[index];
+    if (child && (hasRole(child, "slider", "carousel") || getWidgetHint(child) === "slider")) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function mapSliderSection(node, helpers, depth, sliderPattern) {
@@ -3246,7 +3256,8 @@ function mapFrameNode(node, helpers, depth) {
     return mapOverlayLayerGroup(node, helpers, depth, overlayLayers);
   }
 
-  const sliderPattern = explicitWidget === "slider" || hasRole(node, "slider", "carousel") ? findSliderPattern(node) : findSliderPattern(node);
+  const shouldSkipHeuristicSlider = !explicitWidget && !hasRole(node, "slider", "carousel") && hasExplicitSliderDescendant(node);
+  const sliderPattern = shouldSkipHeuristicSlider ? null : findSliderPattern(node);
   if (sliderPattern) {
     const sliderSection = mapSliderSection(node, helpers, depth, sliderPattern);
     if (sliderSection) {
