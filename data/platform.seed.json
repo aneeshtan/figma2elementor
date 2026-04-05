@@ -1,67 +1,109 @@
 {
   "plans": [
     {
-      "id": "free",
-      "name": "Free",
+      "id": "founders",
+      "name": "Founders",
       "priceMonthly": 0,
       "priceLabel": "Free",
       "priceSuffix": "",
       "exportsPerMonth": 20,
       "seats": 1,
       "features": [
-        "Starts at zero cost",
-        "1 active user",
+        "First 100 total users",
+        "Early adopter free access",
         "20 exports per month",
         "1 Figma plugin key",
-        "Seat-based milestone pricing",
         "Community support"
       ]
     },
     {
-      "id": "launch",
-      "name": "Team",
-      "priceMonthly": 24,
-      "priceLabel": "$24",
+      "id": "seed",
+      "name": "Seed",
+      "priceMonthly": 1,
+      "priceLabel": "$1",
+      "priceSuffix": "/month",
+      "exportsPerMonth": 50,
+      "seats": 1,
+      "features": [
+        "Users 101 to 250",
+        "Lowest paid adoption band",
+        "50 exports per month",
+        "Early supporter pricing"
+      ]
+    },
+    {
+      "id": "makers",
+      "name": "Makers",
+      "priceMonthly": 3,
+      "priceLabel": "$3",
+      "priceSuffix": "/month",
+      "exportsPerMonth": 100,
+      "seats": 1,
+      "features": [
+        "Users 251 to 500",
+        "Gradual pricing increase",
+        "100 exports per month",
+        "Priority support"
+      ]
+    },
+    {
+      "id": "builders",
+      "name": "Builders",
+      "priceMonthly": 6,
+      "priceLabel": "$6",
       "priceSuffix": "/month",
       "exportsPerMonth": 150,
-      "seats": 3,
+      "seats": 1,
       "features": [
-        "Up to 3 active users",
+        "Users 501 to 750",
+        "Mid-growth cohort",
         "150 exports per month",
-        "Multiple API keys",
-        "Priority support",
-        "First collaborative milestone"
+        "Priority support"
       ]
     },
     {
-      "id": "growth",
-      "name": "Studio",
-      "priceMonthly": 79,
-      "priceLabel": "$79",
+      "id": "launch",
+      "name": "Launch",
+      "priceMonthly": 9,
+      "priceLabel": "$9",
       "priceSuffix": "/month",
-      "exportsPerMonth": 600,
-      "seats": 10,
+      "exportsPerMonth": 250,
+      "seats": 1,
       "features": [
-        "Up to 10 active users",
-        "600 exports per month",
-        "Higher team throughput",
-        "Faster support",
-        "Growth milestone"
+        "Users 751 to 1000",
+        "Last low-price cohort",
+        "250 exports per month",
+        "Priority support"
       ]
     },
     {
-      "id": "custom",
-      "name": "Custom",
-      "priceMonthly": null,
-      "priceLabel": "Custom",
-      "priceSuffix": "",
-      "exportsPerMonth": -1,
-      "seats": 25,
+      "id": "scale",
+      "name": "Scale",
+      "priceMonthly": 14,
+      "priceLabel": "$14",
+      "priceSuffix": "/month",
+      "exportsPerMonth": 400,
+      "seats": 1,
       "features": [
-        "Unlimited exports",
-        "Custom seat milestones",
-        "Shared job history",
-        "Priority onboarding"
+        "Users 1001 to 10000",
+        "Stable platform pricing",
+        "400 exports per month",
+        "Priority support"
+      ]
+    },
+    {
+      "id": "stable",
+      "name": "Stable",
+      "priceMonthly": 14,
+      "priceLabel": "$14",
+      "priceSuffix": "/month",
+      "exportsPerMonth": 400,
+      "seats": 1,
+      "features": [
+        "Users 10001+",
+        "Price stays capped",
+        "400 exports per month",
+        "Priority support"
       ]
     }
   ],
@@ -71,7 +113,7 @@
       "name": "Local Studio",
       "slug": "local-studio",
       "email": "founder@figma2element.local",
-      "planId": "launch",
+      "planId": "founders",
       "usage": {
         "period": "2026-04",
         "exportsUsed": 0

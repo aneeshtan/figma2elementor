@@ -35,61 +35,52 @@
                 <div class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:col-span-2">
                     <div class="flex flex-wrap items-start justify-between gap-4">
                         <div>
-                            <p class="text-sm uppercase tracking-[0.2em] text-orange-500">Billing</p>
+                            <p class="text-sm uppercase tracking-[0.2em] text-orange-500">Adoption pricing</p>
                             <h3 class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
-                                {{ $plans[$currentPlanKey]['name'] ?? 'Free' }} plan
+                                {{ $currentBand['name'] ?? 'Founders' }} band
                             </h3>
                             <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-                                {{ $plans[$currentPlanKey]['price_label'] ?? 'Free' }}
-                                @if ($subscription && $subscription->valid())
-                                    · Active subscription
-                                @endif
+                                {{ $currentBand['price_label'] ?? 'Free' }}
                             </p>
                             <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                                Pricing starts free for a solo user and steps up only when your team grows into the next seat milestone.
+                                Early adopters lock in lower pricing. As total platform users grow, new signups enter the next published band.
                             </p>
+                            @if ($nextBand)
+                                <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                                    Next band: {{ $nextBand['name'] }} at {{ $nextBand['price_label'] }} once total users pass {{ number_format($nextBand['start_users']) }}.
+                                </p>
+                            @endif
                         </div>
                         <div class="rounded-2xl bg-slate-100 px-4 py-3 text-right dark:bg-slate-900">
-                            <div class="text-xs uppercase tracking-[0.18em] text-slate-500">This month</div>
-                            <div class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{{ $monthlyUsage }}</div>
-                            <div class="text-xs text-slate-500">credits used</div>
+                            <div class="text-xs uppercase tracking-[0.18em] text-slate-500">Platform users</div>
+                            <div class="mt-1 text-2xl font-semibold text-slate-900 dark:text-white">{{ number_format($totalUsers) }}</div>
+                            <div class="text-xs text-slate-500">current total adopters</div>
                         </div>
                     </div>
 
                     <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        @foreach ($plans as $planKey => $plan)
-                            <div class="rounded-2xl border {{ $planKey === $currentPlanKey ? 'border-orange-400 bg-orange-50/60 dark:border-orange-500 dark:bg-orange-950/20' : 'border-slate-200 dark:border-slate-700' }} p-4">
+                        @foreach ($pricingBands as $band)
+                            <div class="rounded-2xl border {{ ($currentBand['id'] ?? null) === ($band['id'] ?? null) ? 'border-orange-400 bg-orange-50/60 dark:border-orange-500 dark:bg-orange-950/20' : 'border-slate-200 dark:border-slate-700' }} p-4">
                                 <div class="flex items-center justify-between gap-3">
-                                    <h4 class="text-lg font-semibold text-slate-900 dark:text-white">{{ $plan['name'] }}</h4>
-                                    <span class="text-sm text-slate-500">{{ $plan['price_label'] }}</span>
+                                    <h4 class="text-lg font-semibold text-slate-900 dark:text-white">{{ $band['name'] }}</h4>
+                                    <span class="text-sm text-slate-500">{{ $band['price_label'] }}</span>
                                 </div>
                                 <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                                    @if (($plan['seats'] ?? null))
-                                        Up to {{ $plan['seats'] }} user{{ $plan['seats'] > 1 ? 's' : '' }}
+                                    @if (($band['end_users'] ?? null) !== null)
+                                        Total users {{ number_format($band['start_users']) }} to {{ number_format($band['end_users']) }}
                                     @else
-                                        Custom user allocation
+                                        Total users {{ number_format($band['start_users']) }} and above
                                     @endif
                                 </div>
-                                <ul class="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
-                                    @foreach ($plan['features'] as $feature)
-                                        <li>{{ $feature }}</li>
-                                    @endforeach
-                                </ul>
+                                <p class="mt-4 text-sm text-slate-600 dark:text-slate-300">{{ $band['summary'] }}</p>
                                 <div class="mt-5">
-                                    @if (($plan['billing_type'] ?? 'none') === 'stripe')
-                                        <form method="POST" action="{{ route('billing.checkout', $planKey) }}">
-                                            @csrf
-                                            <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200">
-                                                {{ $subscription && $subscription->valid() ? 'Manage Billing' : 'Choose milestone' }}
-                                            </button>
-                                        </form>
-                                    @elseif (($plan['billing_type'] ?? 'none') === 'contact')
-                                        <a href="mailto:support@figma2elementor.ctrlaltl.com?subject=Custom%20Milestone%20Plan" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-slate-400 dark:border-slate-600 dark:text-slate-200">
-                                            Contact Sales
-                                        </a>
+                                    @if (($currentBand['id'] ?? null) === ($band['id'] ?? null))
+                                        <span class="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-white dark:text-slate-900">
+                                            Current public band
+                                        </span>
                                     @else
                                         <span class="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                                            Included
+                                            Upcoming band
                                         </span>
                                     @endif
                                 </div>

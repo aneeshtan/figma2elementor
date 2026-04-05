@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ConversionJob;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -17,6 +18,8 @@ class DashboardController extends Controller
         $subscription = $user->subscription('default');
         $activePriceId = optional($subscription?->items->first())->stripe_price;
         $plans = config('figma2element.plans');
+        $pricingBands = config('figma2element.adoption_bands', []);
+        $totalUsers = User::count();
         $currentPlanKey = collect($plans)
             ->keys()
             ->first(fn (string $key): bool => ($plans[$key]['stripe_price_id'] ?? null) === $activePriceId);
@@ -25,8 +28,27 @@ class DashboardController extends Controller
             $currentPlanKey = $subscription && $subscription->valid() ? 'custom' : 'free';
         }
 
+        $currentBandIndex = collect($pricingBands)
+            ->search(function (array $band) use ($totalUsers): bool {
+                $start = (int) ($band['start_users'] ?? 0);
+                $end = $band['end_users'] ?? null;
+
+                return $totalUsers >= $start && ($end === null || $totalUsers <= (int) $end);
+            });
+
+        if ($currentBandIndex === false) {
+            $currentBandIndex = 0;
+        }
+
+        $currentBand = $pricingBands[$currentBandIndex] ?? null;
+        $nextBand = $pricingBands[$currentBandIndex + 1] ?? null;
+
         return view('dashboard', [
             'plans' => $plans,
+            'pricingBands' => $pricingBands,
+            'currentBand' => $currentBand,
+            'nextBand' => $nextBand,
+            'totalUsers' => $totalUsers,
             'currentPlanKey' => $currentPlanKey,
             'subscription' => $subscription,
             'apiKeys' => $user->apiKeys()->whereNull('revoked_at')->latest()->get(),

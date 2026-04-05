@@ -368,42 +368,60 @@ Text 18</code></pre>
                         <section id="usage" class="rounded-[1.5rem] border border-white/10 bg-slate-900/75 p-7 backdrop-blur">
                             <h2 class="text-2xl font-semibold text-white">Plan Limits & Usage</h2>
                             <p class="mt-4 text-base leading-8 text-slate-300">
-                                Each successful conversion job consumes one unit of usage, but pricing is anchored to team-size milestones. You can start free as a solo user, then move up only when the number of active users reaches the next band.
+                                Each successful conversion job consumes one unit of usage, but public pricing is tied to total platform adopters. Early users benefit from lower cohort pricing, and later cohorts move into the next published band as overall user count grows.
                             </p>
                             <div class="mt-6 overflow-hidden rounded-[1.5rem] border border-white/10">
                                 <table class="min-w-full divide-y divide-white/10 text-sm">
                                     <thead class="bg-black/20 text-left text-slate-300">
                                         <tr>
-                                            <th class="px-5 py-4 font-semibold">Plan</th>
-                                            <th class="px-5 py-4 font-semibold">Users</th>
-                                            <th class="px-5 py-4 font-semibold">Exports</th>
-                                            <th class="px-5 py-4 font-semibold">Milestone</th>
+                                            <th class="px-5 py-4 font-semibold">Band</th>
+                                            <th class="px-5 py-4 font-semibold">Total users</th>
+                                            <th class="px-5 py-4 font-semibold">Monthly price</th>
+                                            <th class="px-5 py-4 font-semibold">Why it exists</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-white/10 bg-white/5 text-slate-200">
                                         <tr>
+                                            <td class="px-5 py-4">Founders</td>
+                                            <td class="px-5 py-4">0 to 100</td>
                                             <td class="px-5 py-4">Free</td>
-                                            <td class="px-5 py-4">1 user</td>
-                                            <td class="px-5 py-4">Up to 20 exports / month</td>
-                                            <td class="px-5 py-4">Best for solo testing at zero cost</td>
+                                            <td class="px-5 py-4">Rewards the first wave of adopters</td>
                                         </tr>
                                         <tr>
-                                            <td class="px-5 py-4">Team · $24/mo</td>
-                                            <td class="px-5 py-4">Up to 3 users</td>
-                                            <td class="px-5 py-4">Up to 150 exports / month</td>
-                                            <td class="px-5 py-4">First collaborative team milestone</td>
+                                            <td class="px-5 py-4">Seed</td>
+                                            <td class="px-5 py-4">101 to 250</td>
+                                            <td class="px-5 py-4">$1/mo</td>
+                                            <td class="px-5 py-4">Keeps the first paid step intentionally low</td>
                                         </tr>
                                         <tr>
-                                            <td class="px-5 py-4">Studio · $79/mo</td>
-                                            <td class="px-5 py-4">Up to 10 users</td>
-                                            <td class="px-5 py-4">Up to 600 exports / month</td>
-                                            <td class="px-5 py-4">Growth milestone for active production teams</td>
+                                            <td class="px-5 py-4">Makers</td>
+                                            <td class="px-5 py-4">251 to 500</td>
+                                            <td class="px-5 py-4">$3/mo</td>
+                                            <td class="px-5 py-4">Gradual increase while the product is still early</td>
                                         </tr>
                                         <tr>
-                                            <td class="px-5 py-4">Custom</td>
-                                            <td class="px-5 py-4">Tailored</td>
-                                            <td class="px-5 py-4">Tailored</td>
-                                            <td class="px-5 py-4">For agencies, departments, or multi-team workflows</td>
+                                            <td class="px-5 py-4">Builders</td>
+                                            <td class="px-5 py-4">501 to 750</td>
+                                            <td class="px-5 py-4">$6/mo</td>
+                                            <td class="px-5 py-4">Mid-growth milestone before broader scale</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-5 py-4">Launch</td>
+                                            <td class="px-5 py-4">751 to 1,000</td>
+                                            <td class="px-5 py-4">$9/mo</td>
+                                            <td class="px-5 py-4">Last low-price cohort before scale</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-5 py-4">Scale</td>
+                                            <td class="px-5 py-4">1,001 to 10,000</td>
+                                            <td class="px-5 py-4">$14/mo</td>
+                                            <td class="px-5 py-4">Stable price during the main growth stage</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="px-5 py-4">Stable</td>
+                                            <td class="px-5 py-4">10,001+</td>
+                                            <td class="px-5 py-4">$14/mo</td>
+                                            <td class="px-5 py-4">The price ceiling stays flat from here onward</td>
                                         </tr>
                                     </tbody>
                                 </table>
