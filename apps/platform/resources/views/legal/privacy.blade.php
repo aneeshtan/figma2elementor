@@ -31,7 +31,7 @@
                     <h1 class="mt-4 text-4xl font-semibold tracking-tight text-white">How the Figma plugin handles data</h1>
                     <p class="mt-5 max-w-3xl text-base leading-8 text-slate-300">
                         Figma2Element sends only the data required to convert a selected Figma section into Elementor JSON. The plugin works with
-                        your Figma2Element account and calls the hosted API at <code>https://figma2elementor.ctrlaltl.com/api/convert</code>.
+                        your Figma2Element account and calls the hosted API at <code>https://f2e.ctrlaltl.com/api/convert</code>.
                     </p>
 
                     <section class="mt-10 space-y-6 text-sm leading-7 text-slate-300">

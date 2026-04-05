@@ -6,7 +6,7 @@ This repository includes a development plugin and the minimum publish-ready meta
 
 - [apps/figma-plugin/manifest.json](/Users/farshad.ghanzanfari/Documents/www/Figma2Element/apps/figma-plugin/manifest.json)
   - restricted `networkAccess`
-  - production API domain set to `https://figma2elementor.ctrlaltl.com`
+  - production API domain set to `https://f2e.ctrlaltl.com`
 - [apps/figma-plugin/ui.html](/Users/farshad.ghanzanfari/Documents/www/Figma2Element/apps/figma-plugin/ui.html)
   - hosted API endpoint is fixed in the UI
   - API key is entered by the user and saved locally in Figma client storage
@@ -22,7 +22,7 @@ This repository includes a development plugin and the minimum publish-ready meta
 3. Go to `Plugins` -> `Development` -> `Import plugin from manifest...`
 4. Choose [apps/figma-plugin/manifest.json](/Users/farshad.ghanzanfari/Documents/www/Figma2Element/apps/figma-plugin/manifest.json)
 5. Confirm the plugin works against:
-   - Production: `https://figma2elementor.ctrlaltl.com/api/convert`
+   - Production: `https://f2e.ctrlaltl.com/api/convert`
    - The plugin requests the user's own API key instead of shipping with one prefilled
 6. In Figma Desktop, go to `Plugins` -> `Manage plugins`
 7. Find `Figma2Element Converter`
@@ -32,7 +32,7 @@ This repository includes a development plugin and the minimum publish-ready meta
    - icon: use [apps/figma-plugin/assets/icon.svg](/Users/farshad.ghanzanfari/Documents/www/Figma2Element/apps/figma-plugin/assets/icon.svg) exported as 128 x 128 PNG if needed
    - thumbnail: prepare a 1920 x 1080 image showing the plugin UI and generated Elementor JSON
 11. Add your support contact and review the network access disclosure
-12. Add the public privacy page `https://figma2elementor.ctrlaltl.com/privacy`
+12. Add the public privacy page `https://f2e.ctrlaltl.com/privacy`
 13. Submit for review
 
 ## Before submitting

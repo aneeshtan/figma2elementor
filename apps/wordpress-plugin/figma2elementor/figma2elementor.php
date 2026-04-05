@@ -101,7 +101,7 @@ if (! class_exists('F2E_Elementor_Importer')) {
                                     name="<?php echo esc_attr(self::OPTION_PLATFORM_URL); ?>"
                                     type="url"
                                     class="regular-text code"
-                                    placeholder="https://figma2elementor.ctrlaltl.com"
+                                    placeholder="https://f2e.ctrlaltl.com"
                                     value="<?php echo esc_attr($platformUrl); ?>"
                                 />
                                 <p class="description">Public Laravel app URL that exposes <code>/api/jobs</code> and <code>/api/jobs/{id}/download</code>.</p>

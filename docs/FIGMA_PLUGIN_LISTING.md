@@ -49,11 +49,11 @@ Software development
 
 ## Support contact
 
-Support: support@figma2elementor.ctrlaltl.com
+Support: info@ctrlaltl.com
 
-Privacy: https://figma2elementor.ctrlaltl.com/privacy
+Privacy: https://f2e.ctrlaltl.com/privacy
 
-Support page: https://figma2elementor.ctrlaltl.com/support
+Support page: https://f2e.ctrlaltl.com/support
 
 ## Screenshot and thumbnail ideas
 

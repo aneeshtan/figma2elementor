@@ -7,7 +7,7 @@
   "ui": "ui.html",
   "networkAccess": {
     "allowedDomains": [
-      "https://figma2elementor.ctrlaltl.com"
+      "https://f2e.ctrlaltl.com"
     ],
     "reasoning": "The plugin sends the user's selected Figma frame structure to the hosted Figma2Element conversion API in order to generate Elementor JSON exports."
   }

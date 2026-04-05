@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         User::query()->updateOrCreate(
             [
-                'email' => 'admin@figma2elementor.ctrlaltl.com',
+                'email' => 'admin@f2e.ctrlaltl.com',
             ],
             [
                 'name' => 'Figma2Element Admin',
