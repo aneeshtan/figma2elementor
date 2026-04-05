@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -42,6 +43,7 @@ class GoogleAuthController extends Controller
         }
 
         $email = $googleUser->getEmail();
+        $providerFieldsAvailable = $this->providerFieldsAvailable();
 
         if (! $email) {
             return redirect()
@@ -49,32 +51,50 @@ class GoogleAuthController extends Controller
                 ->with('status', 'Google did not return an email address for this account.');
         }
 
-        $user = User::query()
-            ->where(function ($query) use ($googleUser) {
-                $query->where('auth_provider', 'google')
-                    ->where('auth_provider_id', $googleUser->getId());
-            })
-            ->orWhere('email', $email)
-            ->first();
+        try {
+            $user = User::query()
+                ->when($providerFieldsAvailable, function ($query) use ($googleUser) {
+                    $query->where(function ($providerQuery) use ($googleUser) {
+                        $providerQuery->where('auth_provider', 'google')
+                            ->where('auth_provider_id', $googleUser->getId());
+                    });
+                })
+                ->orWhere('email', $email)
+                ->first();
 
-        if (! $user) {
-            $user = User::create([
-                'name' => $googleUser->getName() ?: Str::before($email, '@'),
-                'email' => $email,
-                'password' => Hash::make(Str::random(32)),
-                'email_verified_at' => now(),
-                'auth_provider' => 'google',
-                'auth_provider_id' => $googleUser->getId(),
-                'avatar_url' => $googleUser->getAvatar(),
-            ]);
-        } else {
-            $user->forceFill([
-                'name' => $user->name ?: ($googleUser->getName() ?: Str::before($email, '@')),
-                'email_verified_at' => $user->email_verified_at ?: now(),
-                'auth_provider' => 'google',
-                'auth_provider_id' => $googleUser->getId(),
-                'avatar_url' => $googleUser->getAvatar() ?: $user->avatar_url,
-            ])->save();
+            if (! $user) {
+                $attributes = [
+                    'name' => $googleUser->getName() ?: Str::before($email, '@'),
+                    'email' => $email,
+                    'password' => Hash::make(Str::random(32)),
+                    'email_verified_at' => now(),
+                ];
+
+                if ($providerFieldsAvailable) {
+                    $attributes['auth_provider'] = 'google';
+                    $attributes['auth_provider_id'] = $googleUser->getId();
+                    $attributes['avatar_url'] = $googleUser->getAvatar();
+                }
+
+                $user = User::create($attributes);
+            } else {
+                $attributes = [
+                    'name' => $user->name ?: ($googleUser->getName() ?: Str::before($email, '@')),
+                    'email_verified_at' => $user->email_verified_at ?: now(),
+                ];
+
+                if ($providerFieldsAvailable) {
+                    $attributes['auth_provider'] = 'google';
+                    $attributes['auth_provider_id'] = $googleUser->getId();
+                    $attributes['avatar_url'] = $googleUser->getAvatar() ?: $user->avatar_url;
+                }
+
+                $user->forceFill($attributes)->save();
+            }
+        } catch (\Throwable) {
+            return redirect()
+                ->route('login')
+                ->with('status', 'Google login could not be completed on this server yet. Try again after the latest migration is deployed.');
         }
 
         Auth::login($user, true);
@@ -88,5 +108,12 @@ class GoogleAuthController extends Controller
         return filled(config('services.google.client_id'))
             && filled(config('services.google.client_secret'))
             && filled(config('services.google.redirect'));
+    }
+
+    protected function providerFieldsAvailable(): bool
+    {
+        return Schema::hasColumn('users', 'auth_provider')
+            && Schema::hasColumn('users', 'auth_provider_id')
+            && Schema::hasColumn('users', 'avatar_url');
     }
 }

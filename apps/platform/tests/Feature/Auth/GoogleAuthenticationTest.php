@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Socialite\Contracts\User as SocialiteUserContract;
 use Laravel\Socialite\Facades\Socialite;
 use Mockery;
@@ -91,5 +92,34 @@ class GoogleAuthenticationTest extends TestCase
         $this->assertSame('google-linked-123', $existingUser->auth_provider_id);
         $this->assertSame('https://example.com/linked-avatar.png', $existingUser->avatar_url);
         $this->assertNotNull($existingUser->email_verified_at);
+    }
+
+    public function test_google_callback_still_authenticates_when_provider_columns_are_missing(): void
+    {
+        Schema::table('users', function ($table) {
+            $table->dropIndex(['auth_provider', 'auth_provider_id']);
+            $table->dropColumn(['auth_provider', 'auth_provider_id', 'avatar_url']);
+        });
+
+        $socialiteUser = Mockery::mock(SocialiteUserContract::class);
+        $socialiteUser->shouldReceive('getEmail')->andReturn('fallback-user@example.com');
+        $socialiteUser->shouldReceive('getId')->andReturn('google-fallback-123');
+        $socialiteUser->shouldReceive('getName')->andReturn('Fallback User');
+        $socialiteUser->shouldReceive('getAvatar')->andReturn('https://example.com/fallback-avatar.png');
+
+        $provider = Mockery::mock();
+        $provider->shouldReceive('user')->once()->andReturn($socialiteUser);
+
+        Socialite::shouldReceive('driver')->once()->with('google')->andReturn($provider);
+
+        $response = $this->get(route('auth.google.callback'));
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard', absolute: false));
+
+        $user = User::where('email', 'fallback-user@example.com')->first();
+
+        $this->assertNotNull($user);
+        $this->assertNotNull($user->email_verified_at);
     }
 }
