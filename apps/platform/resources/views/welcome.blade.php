@@ -24,6 +24,22 @@
                 return $currentUsers >= $band['start_users']
                     && ($endUsers === null || $currentUsers <= $endUsers);
             }) ?? ($adoptionBands[0] ?? null);
+            $sliderStops = collect($sliderBands)->values()->map(function (array $band, int $index) use ($sliderBands) {
+                $lastIndex = max(count($sliderBands) - 1, 1);
+                $position = $lastIndex > 0 ? ($index / $lastIndex) * 100 : 0;
+
+                return $band + ['visual_position' => $position];
+            })->all();
+            $currentBandIndex = collect($sliderStops)->search(fn (array $band) => ($band['id'] ?? null) === ($currentBand['id'] ?? null));
+            $currentBandIndex = $currentBandIndex === false ? 0 : $currentBandIndex;
+            $bandStartPosition = $sliderStops[$currentBandIndex]['visual_position'] ?? 0;
+            $bandEndPosition = $sliderStops[min($currentBandIndex + 1, count($sliderStops) - 1)]['visual_position'] ?? 100;
+            $bandStartUsers = $currentBand['start_users'] ?? 0;
+            $bandEndUsers = $currentBand['end_users'] ?? $sliderMaxUsers;
+            $bandUserSpan = max(($bandEndUsers - $bandStartUsers), 1);
+            $bandProgress = min(max(($currentUsers - $bandStartUsers) / $bandUserSpan, 0), 1);
+            $visualSliderPercent = $bandStartPosition + (($bandEndPosition - $bandStartPosition) * $bandProgress);
+            $visualSliderPercent = min(max($visualSliderPercent, 2), 98);
         @endphp
         <div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(242,78,30,0.18),_transparent_35%),linear-gradient(180deg,_#0f172a_0%,_#020617_100%)]">
             <header class="mx-auto max-w-6xl px-6 py-6">
@@ -147,63 +163,44 @@
                                             class="absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,#22d3ee_0%,#3b82f6_18%,#8b5cf6_42%,#f97316_72%,#f43f5e_100%)] transition-[width] duration-[1800ms] ease-out"
                                             data-slider-fill
                                             style="width: 0%"
-                                            data-target-width="{{ $sliderPercent }}%"
+                                            data-target-width="{{ $visualSliderPercent }}%"
                                         ></div>
                                     </div>
                                     <div
                                         class="absolute top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40 bg-white/90 shadow-[0_0_30px_rgba(249,115,22,0.45)] transition-[left,transform] duration-[1800ms] ease-out"
                                         data-slider-thumb
                                         style="left: 0%"
-                                        data-target-left="{{ $sliderPercent }}%"
+                                        data-target-left="{{ $visualSliderPercent }}%"
                                     >
                                         <div class="absolute inset-1 rounded-full bg-[radial-gradient(circle_at_30%_30%,#fff8db_0%,#f97316_55%,#7c2d12_100%)]"></div>
                                     </div>
                                     <div
                                         class="absolute top-2 -translate-x-1/2 rounded-2xl border border-orange-400/25 bg-slate-950/90 px-3 py-2 text-center shadow-[0_10px_30px_rgba(15,23,42,0.4)] transition-[left] duration-[1800ms] ease-out"
-                                        data-slider-thumb
+                                        data-slider-badge
                                         style="left: 0%"
-                                        data-target-left="{{ $sliderPercent }}%"
+                                        data-target-left="{{ $visualSliderPercent }}%"
                                     >
                                         <div class="text-[10px] uppercase tracking-[0.2em] text-slate-500">Current</div>
                                         <div class="mt-1 text-sm font-semibold text-white">{{ number_format($currentUsers) }} users</div>
                                         <div class="text-xs font-medium text-orange-300">{{ $currentBand['price_label'] ?? 'Free' }}</div>
                                     </div>
 
-                                    @foreach ($sliderBands as $band)
+                                    @foreach ($sliderStops as $index => $band)
                                         @php
-                                            $markerUsers = $band['end_users'] ?? $sliderMaxUsers;
-                                            $markerPercent = $sliderMaxUsers > 0 ? round((min($markerUsers, $sliderMaxUsers) / $sliderMaxUsers) * 100, 2) : 0;
+                                            $stopUsers = $band['end_users'] ?? $sliderMaxUsers;
+                                            $stopPercent = $band['visual_position'];
+                                            $stopWidthClass = $index === 0 || $index === count($sliderStops) - 1 ? 'w-24 sm:w-28' : 'w-20 sm:w-24';
+                                            $stopTranslateClass = $index === 0 ? 'translate-x-0' : ($index === count($sliderStops) - 1 ? '-translate-x-full' : '-translate-x-1/2');
                                         @endphp
-                                        <div class="absolute top-[4.4rem] bottom-[3.9rem] w-px bg-white/10" style="left: {{ $markerPercent }}%"></div>
-                                        <div class="absolute bottom-0 w-28 -translate-x-1/2" style="left: {{ $markerPercent }}%">
-                                            <div class="rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-2 text-center shadow-[0_10px_30px_rgba(15,23,42,0.22)]">
-                                                <div class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{{ number_format($markerUsers) }} users</div>
+                                        <div class="absolute top-[4.8rem] bottom-[4.6rem] w-px bg-white/10" style="left: {{ $stopPercent }}%"></div>
+                                        <div class="absolute bottom-0 {{ $stopWidthClass }} {{ $stopTranslateClass }}" style="left: {{ $stopPercent }}%">
+                                            <div class="rounded-2xl border border-white/10 bg-slate-950/80 px-2 py-2 text-center shadow-[0_10px_30px_rgba(15,23,42,0.22)]">
+                                                <div class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">{{ number_format($stopUsers) }} users</div>
                                                 <div class="mt-1 text-sm font-semibold text-white">{{ $band['price_label'] }}</div>
                                             </div>
                                         </div>
                                     @endforeach
                                 </div>
-                            </div>
-
-                            <div class="mt-6 grid gap-3 sm:grid-cols-3">
-                                @foreach ($sliderBands as $band)
-                                    @php
-                                        $isActiveBand = ($currentBand['id'] ?? null) === $band['id'];
-                                    @endphp
-                                    <div class="rounded-2xl border px-4 py-3 {{ $isActiveBand ? 'border-orange-400/35 bg-orange-500/10' : 'border-white/10 bg-slate-950/30' }}">
-                                        <div class="flex items-center justify-between gap-3">
-                                            <div class="text-sm font-semibold {{ $isActiveBand ? 'text-white' : 'text-slate-200' }}">{{ $band['name'] }}</div>
-                                            <div class="text-xs font-semibold {{ $isActiveBand ? 'text-orange-200' : 'text-slate-400' }}">{{ $band['price_label'] }}</div>
-                                        </div>
-                                        <div class="mt-2 text-xs leading-5 {{ $isActiveBand ? 'text-orange-100/80' : 'text-slate-500' }}">
-                                            @if (($band['end_users'] ?? null) !== null)
-                                                {{ number_format($band['start_users']) }}-{{ number_format($band['end_users']) }} users
-                                            @else
-                                                {{ number_format($band['start_users']) }}+ users
-                                            @endif
-                                        </div>
-                                    </div>
-                                @endforeach
                             </div>
                         </div>
                     </div>
@@ -217,7 +214,8 @@
         <script>
             window.addEventListener('DOMContentLoaded', () => {
                 const fill = document.querySelector('[data-slider-fill]');
-                const thumb = document.querySelector('[data-slider-thumb]');
+                const thumbs = document.querySelectorAll('[data-slider-thumb]');
+                const badges = document.querySelectorAll('[data-slider-badge]');
 
                 if (fill) {
                     window.requestAnimationFrame(() => {
@@ -225,11 +223,17 @@
                     });
                 }
 
-                if (thumb) {
+                thumbs.forEach((thumb) => {
                     window.requestAnimationFrame(() => {
                         thumb.style.left = thumb.dataset.targetLeft || '0%';
                     });
-                }
+                });
+
+                badges.forEach((badge) => {
+                    window.requestAnimationFrame(() => {
+                        badge.style.left = badge.dataset.targetLeft || '0%';
+                    });
+                });
             });
         </script>
     </body>
