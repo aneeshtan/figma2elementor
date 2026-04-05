@@ -141,6 +141,10 @@
         <input id="api-key" value="f2e_live_local_plugin_key" />
       </label>
 
+      <div class="row row-compact">
+        <button id="clear-api-key" class="secondary" type="button">Forget saved key</button>
+      </div>
+
       <label class="stack">
         <span class="meta">Export mode</span>
         <select id="export-mode">
@@ -177,6 +181,7 @@
       const outputEl = document.querySelector("#output");
       const downloadEl = document.querySelector("#download");
       const exportModeEl = document.querySelector("#export-mode");
+      const clearApiKeyEl = document.querySelector("#clear-api-key");
       const statusEl = document.querySelector("#status");
       const detailEl = document.querySelector("#detail");
       const convertButton = document.querySelector("#convert");
@@ -240,20 +245,48 @@
         }
       }
 
+      function syncSettingsToController() {
+        parent.postMessage(
+          {
+            pluginMessage: {
+              type: "update-settings",
+              endpoint: endpointEl.value.trim(),
+              apiKey: apiKeyEl.value.trim(),
+              exportMode: exportModeEl.value || "auto"
+            }
+          },
+          "*"
+        );
+      }
+
       endpointEl.value = readStoredValue("f2e:endpoint", endpointEl.value);
       apiKeyEl.value = readStoredValue("f2e:api-key", apiKeyEl.value);
       exportModeEl.value = readStoredValue("f2e:export-mode", exportModeEl.value || "auto");
 
       endpointEl.oninput = () => {
         writeStoredValue("f2e:endpoint", endpointEl.value.trim());
+        syncSettingsToController();
       };
 
       apiKeyEl.oninput = () => {
         writeStoredValue("f2e:api-key", apiKeyEl.value.trim());
+        syncSettingsToController();
       };
 
       exportModeEl.oninput = () => {
         writeStoredValue("f2e:export-mode", exportModeEl.value);
+        syncSettingsToController();
+      };
+
+      clearApiKeyEl.onclick = () => {
+        apiKeyEl.value = "";
+        writeStoredValue("f2e:api-key", "");
+        syncSettingsToController();
+        setStatus(
+          "success",
+          "Saved API key removed.",
+          "Paste a new API key when you want to replace it."
+        );
       };
 
       document.querySelector("#refresh").onclick = () => {
@@ -358,6 +391,27 @@
             "Plugin controller ready.",
             `Connected to page: ${message.payload && message.payload.pageName ? message.payload.pageName : "Unknown page"}\nWaiting for selection data...`
           );
+          return;
+        }
+
+        if (message.type === "settings-data") {
+          const settings = message.payload || {};
+
+          if (typeof settings.endpoint === "string" && settings.endpoint.trim()) {
+            endpointEl.value = settings.endpoint.trim();
+            writeStoredValue("f2e:endpoint", endpointEl.value);
+          }
+
+          if (typeof settings.apiKey === "string") {
+            apiKeyEl.value = settings.apiKey.trim();
+            writeStoredValue("f2e:api-key", apiKeyEl.value);
+          }
+
+          if (typeof settings.exportMode === "string" && settings.exportMode.trim()) {
+            exportModeEl.value = settings.exportMode.trim();
+            writeStoredValue("f2e:export-mode", exportModeEl.value);
+          }
+
           return;
         }
 

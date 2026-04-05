@@ -4,6 +4,8 @@ figma.showUI(__html__, {
   themeColors: true
 });
 
+const SETTINGS_STORAGE_KEY = "f2e:plugin-settings";
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -960,6 +962,36 @@ async function sendSelection() {
   }
 }
 
+async function readSavedSettings() {
+  try {
+    const stored = await figma.clientStorage.getAsync(SETTINGS_STORAGE_KEY);
+
+    if (!stored || typeof stored !== "object") {
+      return null;
+    }
+
+    return {
+      endpoint: typeof stored.endpoint === "string" ? stored.endpoint : "",
+      apiKey: typeof stored.apiKey === "string" ? stored.apiKey : "",
+      exportMode: typeof stored.exportMode === "string" && stored.exportMode ? stored.exportMode : "auto"
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+async function writeSavedSettings(settings) {
+  try {
+    await figma.clientStorage.setAsync(SETTINGS_STORAGE_KEY, {
+      endpoint: typeof settings.endpoint === "string" ? settings.endpoint : "",
+      apiKey: typeof settings.apiKey === "string" ? settings.apiKey : "",
+      exportMode: typeof settings.exportMode === "string" && settings.exportMode ? settings.exportMode : "auto"
+    });
+  } catch (error) {
+    // Ignore storage failures and continue using in-memory UI state.
+  }
+}
+
 async function initializePlugin() {
   try {
     figma.on("selectionchange", () => {
@@ -983,7 +1015,25 @@ async function initializePlugin() {
 
 figma.ui.onmessage = async (message) => {
   if (message.type === "ui-ready") {
+    const savedSettings = await readSavedSettings();
+
+    if (savedSettings) {
+      figma.ui.postMessage({
+        type: "settings-data",
+        payload: savedSettings
+      });
+    }
+
     await sendSelection();
+    return;
+  }
+
+  if (message.type === "update-settings") {
+    await writeSavedSettings({
+      endpoint: message.endpoint,
+      apiKey: message.apiKey,
+      exportMode: message.exportMode
+    });
     return;
   }
 
