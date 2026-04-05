@@ -44,6 +44,20 @@ class ExampleTest extends TestCase
         $response
             ->assertStatus(200)
             ->assertSee('How to get help')
-            ->assertSee('support@figma2elementor.ctrlaltl.com');
+            ->assertSee('info@ctrlaltl.com');
+    }
+
+    public function test_the_support_form_submits_to_the_configured_email(): void
+    {
+        $response = $this->post('/support', [
+            'name' => 'Farshad',
+            'email' => 'farshad@example.com',
+            'subject' => 'Plugin issue',
+            'message' => 'The plugin needs help.',
+        ]);
+
+        $response
+            ->assertRedirect('/support')
+            ->assertSessionHas('status');
     }
 }

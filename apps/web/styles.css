@@ -663,6 +663,15 @@ textarea {
   line-height: 1.6;
 }
 
+.footer-meta a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.footer-meta a:hover {
+  text-decoration: underline;
+}
+
 .reveal {
   opacity: 0;
   transform: translateY(16px);

@@ -4,6 +4,7 @@ use App\Http\Controllers\ApiKeyController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SupportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -15,7 +16,8 @@ Route::get('/docs', function () {
 })->name('docs');
 
 Route::view('/privacy', 'legal.privacy')->name('privacy');
-Route::view('/support', 'legal.support')->name('support');
+Route::get('/support', [SupportController::class, 'show'])->name('support');
+Route::post('/support', [SupportController::class, 'submit'])->name('support.submit');
 
 Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
