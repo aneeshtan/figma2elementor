@@ -10,40 +10,43 @@
       "seats": 1,
       "features": [
         "Starts at zero cost",
+        "1 active user",
         "20 exports per month",
         "1 Figma plugin key",
-        "Milestone pricing model",
+        "Seat-based milestone pricing",
         "Community support"
       ]
     },
     {
       "id": "launch",
-      "name": "Launch",
-      "priceMonthly": 19,
-      "priceLabel": "$19",
+      "name": "Team",
+      "priceMonthly": 24,
+      "priceLabel": "$24",
       "priceSuffix": "/month",
-      "exportsPerMonth": 100,
-      "seats": 1,
+      "exportsPerMonth": 150,
+      "seats": 3,
       "features": [
-        "100 exports per month",
+        "Up to 3 active users",
+        "150 exports per month",
         "Multiple API keys",
         "Priority support",
-        "First paid milestone"
+        "First collaborative milestone"
       ]
     },
     {
       "id": "growth",
-      "name": "Growth",
-      "priceMonthly": 49,
-      "priceLabel": "$49",
+      "name": "Studio",
+      "priceMonthly": 79,
+      "priceLabel": "$79",
       "priceSuffix": "/month",
-      "exportsPerMonth": 400,
-      "seats": 2,
+      "exportsPerMonth": 600,
+      "seats": 10,
       "features": [
-        "400 exports per month",
-        "Higher throughput",
+        "Up to 10 active users",
+        "600 exports per month",
+        "Higher team throughput",
         "Faster support",
-        "High-volume milestone"
+        "Growth milestone"
       ]
     },
     {
@@ -53,10 +56,10 @@
       "priceLabel": "Custom",
       "priceSuffix": "",
       "exportsPerMonth": -1,
-      "seats": 5,
+      "seats": 25,
       "features": [
         "Unlimited exports",
-        "Team seats",
+        "Custom seat milestones",
         "Shared job history",
         "Priority onboarding"
       ]

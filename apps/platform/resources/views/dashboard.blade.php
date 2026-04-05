@@ -46,7 +46,7 @@
                                 @endif
                             </p>
                             <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                                Milestone pricing starts at zero and only steps up when your monthly export volume crosses the next threshold.
+                                Pricing starts free for a solo user and steps up only when your team grows into the next seat milestone.
                             </p>
                         </div>
                         <div class="rounded-2xl bg-slate-100 px-4 py-3 text-right dark:bg-slate-900">
@@ -62,6 +62,13 @@
                                 <div class="flex items-center justify-between gap-3">
                                     <h4 class="text-lg font-semibold text-slate-900 dark:text-white">{{ $plan['name'] }}</h4>
                                     <span class="text-sm text-slate-500">{{ $plan['price_label'] }}</span>
+                                </div>
+                                <div class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                                    @if (($plan['seats'] ?? null))
+                                        Up to {{ $plan['seats'] }} user{{ $plan['seats'] > 1 ? 's' : '' }}
+                                    @else
+                                        Custom user allocation
+                                    @endif
                                 </div>
                                 <ul class="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-300">
                                     @foreach ($plan['features'] as $feature)
